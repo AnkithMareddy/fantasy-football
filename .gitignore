@@ -1,0 +1,27 @@
+# personal data: phone numbers and texted reports
+recipients.txt
+reports/
+
+# large or regenerated every run
+sleeper/players_raw.json
+sleeper/players.json
+sleeper/rosters.json
+season_input.json
+season_out.json
+state/latest_*.txt
+state/week*.json
+state/actuals.json
+state/standings.json
+state/.test_run_start
+
+# python, OS, tooling
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
+
+# old video app leftovers, in case they reappear
+node_modules/
+.next/
+.env
+.env.*

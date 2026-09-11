@@ -1,0 +1,45 @@
+{
+ "_note": "Researched return weeks for rostered players. return_week = first NFL week the player is expected to play. Maintained by the morning report run. NFL IR = minimum 4 games.",
+ "Brock Bowers": {
+  "return_week": 5,
+  "note": "Meniscus trim Sept 8; placed on IR (4-game minimum). Schefter: 'a game or two' before IR move.",
+  "source": "NFL.com, NBC Sports",
+  "updated": "2026-09-10"
+ },
+ "A.J. Brown": {
+  "return_week": 6,
+  "note": "High-ankle sprain vs SEA, X-rays negative for fracture. Rapoport: out at least 4 weeks (next game isn't until Sept 20 vs PIT). Schultz range: 3-6 wks. Seen in walking boot postgame.",
+  "source": "Rapoport (NFL Network), Jordan Schultz",
+  "updated": "2026-09-10"
+ },
+ "TreVeyon Henderson": {
+  "return_week": 3,
+  "note": "Ankle injury in Aug 24 practice; missed all practices and the Wk1 opener. Timeline not given.",
+  "source": "Patriots.com, Yahoo Sports",
+  "updated": "2026-09-10"
+ },
+ "Isiah Pacheco": {
+  "return_week": 5,
+  "note": "On IR, minimum 4 games.",
+  "source": "ESPN",
+  "updated": "2026-09-10"
+ },
+ "Zach Charbonnet": {
+  "return_week": 5,
+  "note": "Reserve/PUP, unavailable first 4 games.",
+  "source": "Fantasy Nerds",
+  "updated": "2026-09-10"
+ },
+ "Jordyn Tyson": {
+  "return_week": 5,
+  "note": "IR, minimum 4 games.",
+  "source": "news roundup",
+  "updated": "2026-09-10"
+ },
+ "Josh Jacobs": {
+  "return_week": 12,
+  "note": "Pleaded no contest Sept 10 (criminal case resolved). Remains on Commissioner's Exempt List (paid, can't play/practice); NFL confirms no timetable for discipline. Standard domestic-violence-case suspension is 6 games, could be shorter or longer.",
+  "source": "NBC Sports (PFT), NFL.com",
+  "updated": "2026-09-10"
+ }
+}
