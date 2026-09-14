@@ -10,7 +10,9 @@ Season model and post-slate reports for my Sleeper league: ShowMeYourTDs, 12 tea
   - the current week uses points already scored
   - injured players return on researched dates, with a harsh injury model on top
 - Produces playoff, bye, #1 seed, finals, and title odds for all 12 teams.
+- Pulls real NFL play-by-play (nflverse) for team tendencies — EPA/play, pass rate, xpass residual — independent of fantasy scoring.
 - Texts a written report through Messages after each NFL slate.
+- Publishes a public dashboard (standings, matchups, tendencies, market watch) as a Claude Artifact, refreshed automatically each run.
 
 ## Running it
 
@@ -34,7 +36,11 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `league_table.py` | phone-friendly league odds and this week's matchups |
 | `gameday.py` | box scores under league scoring, injuries, free agents who produced |
 | `startsit.py` | conservative-floor start/sit call for the user's own lineup |
-| `odds.py` | this week's Vegas lines (ESPN/DraftKings), turned into a capped game-script multiplier startsit.py applies |
+| `odds.py` | this week's Vegas lines (ESPN/DraftKings) and line movement, feeds startsit.py's game-script multiplier |
+| `tendencies.py` | real play-by-play tendencies (nflverse) — venv-only, see Setup below |
+| `build_site.py` | consolidates state into `site/data.json` for the public dashboard |
+| `site/index.html` | the public dashboard page, published as a Claude Artifact |
+| `state/site_url.txt` | the live Artifact URL — republish here, don't create a new one |
 | `state/scouting_notes.md` | durable team/coach patterns noticed across weeks, maintained by the report run |
 | `board.json` | preseason projections |
 | `state/injury_overrides.json` | researched injury return weeks, maintained by the report run |
@@ -50,3 +56,16 @@ Two Claude scheduled tasks:
 - **Fantasy league recap (forward to group chat)** — Tuesday at 9:30 AM, after Monday Night Football wraps up. Re-runs the model (no new research), then writes a league-wide recap — all 6 matchups, standings, top performers, and updated playoff/title odds for all 12 teams — meant to be forwarded to the whole league's group chat. Texted to the same numbers in `recipients.txt`.
 
 Both need the Claude app open and the Mac awake. `sudo pmset -a disablesleep 1` and `sudo pmset -a displaysleep 0` keep it from idle-sleeping, but a MacBook with the lid closed and no external display still force-sleeps regardless — leave the lid open (or attach an external display while on power) for these to fire reliably.
+
+The Sunday/Tuesday/Friday task also republishes the public dashboard (state/site_url.txt) as its last step.
+
+## Setup: tendencies.py
+
+`tendencies.py` needs `nflreadpy` (nflverse data, `polars`-based) in a venv — this project's Python 3.14 environment couldn't build the older `nfl_data_py`'s pinned numpy from source, so `nflreadpy` is the one that's actually installed:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install nflreadpy
+```
+
+update.sh runs it automatically if `.venv/` exists, and skips it quietly (with a note) if it doesn't.

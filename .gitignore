@@ -13,6 +13,9 @@ state/week*.json
 state/actuals.json
 state/standings.json
 state/lines.json
+state/tendencies.json
+site/data.json
+.venv/
 state/.test_run_start
 
 # python, OS, tooling

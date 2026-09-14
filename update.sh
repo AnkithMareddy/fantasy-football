@@ -9,3 +9,12 @@ python3 league_table.py   | tee state/latest_league.txt
 python3 gameday.py        | tee state/latest_games.txt
 python3 odds.py           | tee state/latest_lines.txt
 python3 startsit.py       > state/latest_startsit.txt
+
+# tendencies.py needs the venv (nflreadpy/polars) — skip quietly if it hasn't been set up
+if [ -x .venv/bin/python3 ]; then
+  .venv/bin/python3 tendencies.py > state/latest_tendencies.txt
+else
+  echo "skipping tendencies.py: .venv not found (run: python3 -m venv .venv && .venv/bin/pip install nflreadpy)"
+fi
+
+python3 build_site.py

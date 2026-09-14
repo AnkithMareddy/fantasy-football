@@ -1,0 +1,541 @@
+<meta charset="utf-8">
+<title>ShowMeYourTDs</title>
+<meta name="description" content="Live standings, odds, matchups, and NFL play-by-play tendencies for the ShowMeYourTDs fantasy league.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1512;
+    --surface: #151F1A;
+    --surface-2: #1B2921;
+    --line: rgba(237,234,226,0.10);
+    --line-strong: rgba(237,234,226,0.18);
+    --text: #EDEAE2;
+    --text-dim: #93A398;
+    --text-faint: #5E6D64;
+    --accent: #FF6A2B;
+    --accent-soft: rgba(255,106,43,0.14);
+    --gold: #FFC93F;
+    --good: #4CAF6D;
+    --good-soft: rgba(76,175,109,0.14);
+    --bad: #E2534B;
+    --bad-soft: rgba(226,83,75,0.14);
+    --info: #6FA8D8;
+    --font-display: "Bebas Neue", "Arial Narrow", sans-serif;
+    --font-body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+    --font-label: "Barlow Condensed", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 1200px 500px at 50% -100px, rgba(255,106,43,0.08), transparent 60%);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+
+  /* ---- header / scoreboard bar ---- */
+  header.board {
+    border-bottom: 3px solid var(--accent);
+    background: linear-gradient(180deg, rgba(255,106,43,0.07), transparent);
+    padding: 28px 20px 18px;
+    margin-bottom: 4px;
+  }
+  .board-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: clamp(34px, 5vw, 52px);
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-wrap: balance;
+  }
+  .wordmark span { color: var(--accent); }
+  .board-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    font-family: var(--font-label);
+    color: var(--text-dim);
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+  .board-meta strong {
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+
+  /* ---- ticker ---- */
+  .ticker {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    font-family: var(--font-label);
+    font-size: 14px;
+  }
+  .ticker-item {
+    flex: none;
+    padding: 10px 22px;
+    border-right: 1px solid var(--line);
+    white-space: nowrap;
+    color: var(--text-dim);
+  }
+  .ticker-item b { color: var(--gold); font-weight: 600; }
+
+  main { padding-top: 28px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1.7fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--accent);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .panel.info-accent { border-top-color: var(--info); }
+  .panel.gold-accent { border-top-color: var(--gold); }
+
+  .panel h2 {
+    font-family: var(--font-display);
+    font-size: 21px;
+    letter-spacing: 0.03em;
+    margin: 0;
+    padding: 14px 18px 10px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .panel h2 small {
+    font-family: var(--font-label);
+    font-size: 12px;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .panel-body { padding: 0 18px 18px; }
+  .panel-note {
+    font-family: var(--font-label);
+    font-size: 12.5px;
+    color: var(--text-faint);
+    padding: 10px 18px 14px;
+    border-top: 1px solid var(--line);
+    margin-top: 4px;
+  }
+
+  table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 13.5px; }
+  th {
+    white-space: nowrap;
+    font-family: var(--font-label);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: right;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  th:first-child, td:first-child { text-align: left; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .num { font-family: var(--font-mono); }
+  .team-cell { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .rank { color: var(--text-faint); font-family: var(--font-mono); width: 1.4em; display: inline-block; }
+  .you-flag {
+    font-family: var(--font-label);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+  .table-scroll { overflow-x: auto; }
+
+  .overflow-scroll { overflow-x: auto; }
+
+  /* matchup cards */
+  .matchups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .matchup {
+    background: var(--surface);
+    padding: 14px 16px;
+  }
+  .matchup-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+  }
+  .matchup-row .name { font-weight: 500; }
+  .matchup-row .name.user { color: var(--accent); font-weight: 600; }
+  .matchup-row .pct { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); }
+  .matchup-row .pts { font-family: var(--font-mono); font-size: 15px; font-weight: 500; }
+  .matchup-vs {
+    text-align: center;
+    font-family: var(--font-label);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    padding: 2px 0;
+  }
+  .win-bar {
+    height: 3px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    overflow: hidden;
+    display: flex;
+    margin-top: 8px;
+  }
+  .win-bar > span { display: block; height: 100%; background: var(--accent); }
+
+  /* list rows: performers / injuries / market */
+  .list-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row .left { min-width: 0; }
+  .list-row .primary { font-weight: 500; }
+  .list-row .secondary { font-size: 12px; color: var(--text-faint); font-family: var(--font-label); }
+  .list-row .val { font-family: var(--font-mono); font-weight: 500; white-space: nowrap; }
+  .pill {
+    font-family: var(--font-label);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    padding: 1px 7px;
+    border-radius: 2px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .pill.bad { background: var(--bad-soft); color: var(--bad); }
+  .pill.info { background: rgba(111,168,216,0.14); color: var(--info); }
+
+  .empty-note {
+    color: var(--text-faint);
+    font-family: var(--font-label);
+    font-size: 13px;
+    padding: 12px 0;
+  }
+
+  footer {
+    margin-top: 32px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-label);
+    font-size: 12px;
+    color: var(--text-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  footer a { color: var(--text-dim); text-decoration: underline; text-underline-offset: 2px; }
+
+  .skel { color: var(--text-faint); font-family: var(--font-label); padding: 40px 20px; text-align: center; }
+</style>
+
+<header class="board">
+  <div class="board-inner">
+    <div class="wordmark">SHOW ME YOUR <span>TDs</span></div>
+    <div class="board-meta">
+      <span>WEEK <strong id="m-week">—</strong></span>
+      <span><strong id="m-sims">—</strong> SEASON SIMS</span>
+      <span id="m-updated"></span>
+    </div>
+  </div>
+</header>
+
+<div class="ticker" id="ticker"></div>
+
+<div class="wrap">
+  <main id="main">
+    <div class="skel">Loading league data…</div>
+  </main>
+
+  <footer>
+    <span>Odds: DraftKings via ESPN · Tendencies: nflverse (CC-BY-SA 4.0) · Scores/rosters: Sleeper &amp; ESPN</span>
+    <span id="f-updated"></span>
+  </footer>
+</div>
+
+<script>
+async function main() {
+  let data;
+  try {
+    const res = await fetch('data.json', {cache: 'no-store'});
+    data = await res.json();
+  } catch (e) {
+    document.getElementById('main').innerHTML = '<div class="skel">Could not load data.json — publish it alongside this page.</div>';
+    return;
+  }
+  render(data);
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function pct(n) { return (n === null || n === undefined) ? '—' : n.toFixed(0) + '%'; }
+function pct1(n) { return (n === null || n === undefined) ? '—' : n.toFixed(1) + '%'; }
+
+function render(data) {
+  document.getElementById('m-week').textContent = data.week;
+  document.getElementById('m-sims').textContent = data.sims.toLocaleString();
+  const now = new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+  document.getElementById('m-updated').textContent = 'UPDATED ' + now.toUpperCase();
+  document.getElementById('f-updated').textContent = 'Page generated ' + now;
+
+  renderTicker(data);
+
+  const s = data.standings || [];
+  const leader = s[0];
+  const user = s.find(r => r.is_user);
+
+  document.getElementById('main').innerHTML = `
+    <div class="grid">
+      <section class="panel">
+        <h2>Standings &amp; Odds <small>${data.sims.toLocaleString()} sims</small></h2>
+        <div class="panel-body table-scroll">
+          ${standingsTable(s)}
+        </div>
+      </section>
+      <section class="panel gold-accent">
+        <h2>Storylines</h2>
+        <div class="panel-body">
+          ${storylines(data)}
+        </div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-bottom:20px;">
+      <h2>Week ${data.week} Matchups</h2>
+      <div class="panel-body">
+        ${matchupCards(data.matchups, data.user_team)}
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Team Tendencies <small>${data.tendencies ? 'nflverse play-by-play, wk ' + data.tendencies.weeks.join('-') : ''}</small></h2>
+        <div class="panel-body table-scroll">
+          ${tendenciesTable(data.tendencies)}
+        </div>
+        ${data.tendencies && data.tendencies.weeks.length < 4 ? '<div class="panel-note">Provisional — only ' + data.tendencies.weeks.length + ' week(s) of plays. Small samples, treat with caution.</div>' : ''}
+      </section>
+      <section class="panel info-accent">
+        <h2>Market Watch</h2>
+        <div class="panel-body">
+          ${marketList(data.market)}
+        </div>
+      </section>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Top Performers <small>this week</small></h2>
+        <div class="panel-body">
+          ${performersList(data.top_performers)}
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Injury Report</h2>
+        <div class="panel-body">
+          ${injuriesList(data.injuries)}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderTicker(data) {
+  const items = [];
+  const s = data.standings || [];
+  if (s[0]) items.push(`#1 seed pace: <b>${esc(s[0].team)}</b> (${pct(s[0].playoff_pct)} playoffs)`);
+  const closest = [...(data.matchups||[])].sort((a,b) => Math.abs(a.a_winpct-50) - Math.abs(b.a_winpct-50))[0];
+  if (closest) items.push(`Closest game: <b>${esc(closest.a)}</b> vs <b>${esc(closest.b)}</b> (${closest.a_winpct}/${closest.b_winpct})`);
+  const t = data.tendencies;
+  if (t && t.teams && t.teams.length) {
+    const mostPass = [...t.teams].sort((a,b) => (b.xpass_residual||-1)-(a.xpass_residual||-1))[0];
+    if (mostPass) items.push(`Most pass-heavy vs expected: <b>${esc(mostPass.team)}</b> (${(mostPass.xpass_residual*100).toFixed(0)}%)`);
+  }
+  const mv = (data.market && data.market.lines) ? Object.values(data.market.lines) : [];
+  items.push(`Betting lines tracked: <b>${Object.keys(data.market && data.market.lines || {}).length / 2 | 0 || (mv.length ? Math.ceil(mv.length/2) : 0)}</b> games this week`);
+  document.getElementById('ticker').innerHTML = items.map(i => `<div class="ticker-item">${i}</div>`).join('');
+}
+
+function standingsTable(rows) {
+  if (!rows.length) return '<div class="empty-note">No standings data yet.</div>';
+  return `<table>
+    <thead><tr>
+      <th>Team</th><th>Rec (proj)</th><th>Actual</th><th>PF</th><th>Playoff</th><th>Bye</th><th>Title</th><th>FAAB</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td><span class="team-cell"><span class="rank">${r.rank}</span>${esc(r.team)}${r.is_user ? '<span class="you-flag">YOU</span>' : ''}</span></td>
+        <td class="num">${r.proj_w}-${r.proj_l}</td>
+        <td class="num">${r.actual_w}-${r.actual_l}</td>
+        <td class="num">${r.pf.toFixed(1)}</td>
+        <td class="num">${pct1(r.playoff_pct)}</td>
+        <td class="num">${pct1(r.bye_pct)}</td>
+        <td class="num">${pct1(r.title_pct)}</td>
+        <td class="num">$${r.faab}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function matchupCards(matchups, userTeam) {
+  if (!matchups || !matchups.length) return '<div class="empty-note">No matchups posted yet.</div>';
+  return `<div class="matchups">
+    ${matchups.map(m => {
+      const aUser = m.a === userTeam, bUser = m.b === userTeam;
+      return `<div class="matchup">
+        <div class="matchup-row">
+          <span class="name ${aUser?'user':''}">${esc(m.a)}</span>
+          <span class="pts">${m.a_pts}</span>
+        </div>
+        <div class="matchup-row"><span class="pct">${m.a_winpct}% win</span><span class="pct">${m.b_winpct}% win</span></div>
+        <div class="win-bar"><span style="width:${m.a_winpct}%"></span></div>
+        <div class="matchup-vs">VS</div>
+        <div class="matchup-row">
+          <span class="name ${bUser?'user':''}">${esc(m.b)}</span>
+          <span class="pts">${m.b_pts}</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function tendenciesTable(t) {
+  if (!t || !t.teams || !t.teams.length) return '<div class="empty-note">Run tendencies.py to populate this.</div>';
+  const rows = [...t.teams].sort((a,b) => b.epa_per_play_off - a.epa_per_play_off);
+  return `<table>
+    <thead><tr>
+      <th>Team</th><th>EPA/play (off)</th><th>EPA/play (def)</th><th>Pass rate</th><th>xPass +/-</th><th>Shotgun</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td>${esc(r.team)}</td>
+        <td class="num">${r.epa_per_play_off.toFixed(2)}</td>
+        <td class="num">${(r.epa_per_play_def||0).toFixed(2)}</td>
+        <td class="num">${pct(r.pass_rate*100)}</td>
+        <td class="num">${r.xpass_residual!==null ? (r.xpass_residual>0?'+':'')+(r.xpass_residual*100).toFixed(0)+'%' : '—'}</td>
+        <td class="num">${pct(r.shotgun_rate*100)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function marketList(market) {
+  const lines = (market && market.lines) ? market.lines : {};
+  const seen = new Set();
+  const games = [];
+  for (const [team, l] of Object.entries(lines)) {
+    const key = [team, l.opp].sort().join('-');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const fav = l.spread < 0 ? team : l.opp;
+    const dogSpread = Math.abs(l.spread);
+    games.push({away: l.home ? l.opp : team, home: l.home ? team : l.opp, fav, spread: dogSpread, total: l.total});
+  }
+  if (!games.length) return '<div class="empty-note">No games with a posted line right now.</div>';
+  return games.map(g => `<div class="list-row">
+    <div class="left">
+      <div class="primary">${esc(g.away)} @ ${esc(g.home)}</div>
+      <div class="secondary">${esc(g.fav)} favored</div>
+    </div>
+    <div class="val">-${g.spread} · O/U ${g.total}</div>
+  </div>`).join('');
+}
+
+function performersList(list) {
+  if (!list || !list.length) return '<div class="empty-note">No games played yet this week.</div>';
+  return list.map(p => `<div class="list-row">
+    <div class="left">
+      <div class="primary">${esc(p.name)} <span class="secondary">${esc(p.team)}</span></div>
+      <div class="secondary">${p.owner ? esc(p.owner) : 'free agent'}</div>
+    </div>
+    <div class="val">${p.pts.toFixed(1)}</div>
+  </div>`).join('');
+}
+
+function injuriesList(list) {
+  if (!list || !list.length) return '<div class="empty-note">No injuries reported this week.</div>';
+  return list.map(i => `<div class="list-row">
+    <div class="left">
+      <div class="primary">${esc(i.player)} <span class="secondary">${esc(i.team)}</span></div>
+      <div class="secondary">${esc(i.type || '')}${i.owner ? ' · ' + esc(i.owner) : ''}</div>
+    </div>
+    <span class="pill ${i.status === 'Out' || i.status === 'Doubtful' ? 'bad' : 'info'}">${esc(i.status || '')}</span>
+  </div>`).join('');
+}
+
+function storylines(data) {
+  const items = [];
+  const s = data.standings || [];
+  const user = s.find(r => r.is_user);
+  if (user) items.push(`<b>${esc(user.team)}</b> sits ${user.rank}${ordinal(user.rank)} at ${pct1(user.playoff_pct)} to make the playoffs.`);
+  const leader = s[0];
+  if (leader) items.push(`<b>${esc(leader.team)}</b> leads the field at ${pct1(leader.title_pct)} title odds.`);
+  const t = data.tendencies;
+  if (t && t.teams && t.teams.length) {
+    const best = [...t.teams].sort((a,b)=>b.epa_per_play_off-a.epa_per_play_off)[0];
+    items.push(`<b>${esc(best.team)}</b> leads the league in offensive EPA/play (${best.epa_per_play_off.toFixed(2)}) so far.`);
+  }
+  if (!items.length) return '<div class="empty-note">Check back once more of the week has played.</div>';
+  return items.map(i => `<div class="list-row" style="border:none;padding:9px 0 9px;line-height:1.45;">${i}</div>`).join('');
+}
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return s[(v-20)%10] || s[v] || s[0];
+}
+
+main();
+</script>

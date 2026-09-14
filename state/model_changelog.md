@@ -1,6 +1,12 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-09-14 (2) - real NFL tendencies + a public dashboard
+- New tendencies.py pulls actual play-by-play (nflverse, via nflreadpy — free, CC-BY-SA 4.0) and computes real per-team tendencies: EPA/play on offense and defense, pass rate, xpass residual (actual vs. situation-neutral expected pass rate — the standard "predictability" signal), red zone pass rate, shotgun/no-huddle rate. Entirely independent of fantasy scoring — this is what actually happened on the field. Venv-only (nflreadpy needs polars, not installed system-wide); update.sh runs it automatically if .venv/ exists, skips quietly otherwise. Provisional under ~4 weeks of data — small samples, don't overread early.
+- New build_site.py consolidates standings/odds/matchups/tendencies/market lines/top performers/injuries into site/data.json.
+- New public dashboard at site/index.html, published as a Claude Artifact (URL in state/site_url.txt). Republished automatically as the last step of the Sun/Tue/Fri report — the page's design is static, only the data refreshes.
+- Doesn't touch the season simulation or any odds/projection number — this is a new, separate read-only view, not a model change to the numbers themselves.
+
 ## 2026-09-14 - betting lines feed into start/sit, plus a scouting-notes system
 - New odds.py, run by update.sh, pulls this week's spread/total/moneyline from ESPN's public odds feed (DraftKings, no auth) and writes state/lines.json + state/latest_lines.txt. Only covers games that still have a posted line at refresh time — completed games lose their line, next week's often aren't posted yet, so most weeks this covers a handful of games, not all of them.
 - startsit.py now scales each not-yet-played player's floor by their team's Vegas-implied total (total ± spread, split per team), capped to 0.85-1.15x so one lopsided line can't dominate a call. On spreads of 7+ there's also a small (±5%) RB-vs-WR/TE skew in opposite directions — clock-killing game script favors the favorite's rushing, garbage time favors the underdog's passing. This only touches the current week's start/sit floor, never season.py's season-long ppg baseline — a Vegas line is a one-week signal, not a true-talent read, so it has no business moving the number the 10,000-season sim runs on.
