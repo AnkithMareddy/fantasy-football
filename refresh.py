@@ -28,10 +28,28 @@ if not os.path.exists(pm) or time.time() - os.path.getmtime(pm) > 20 * 3600:
 P = json.load(open(pm))
 
 state = get('https://api.sleeper.app/v1/state/nfl')
-users = {u['user_id']: u.get('display_name', '?') for u in get(f'https://api.sleeper.app/v1/league/{L}/users')}
+users_raw = get(f'https://api.sleeper.app/v1/league/{L}/users')
+users = {u['user_id']: u.get('display_name', '?') for u in users_raw}
 draft = get(f'https://api.sleeper.app/v1/league/{L}/drafts')[0]
 user_slot = {uid: int(s) for uid, s in (draft.get('draft_order') or {}).items()}   # stable even if names change
 slot_name = {int(k): v for k, v in json.load(open('sleeper/slot_name.json')).items()}
+
+# current display info for the site (team name / avatar can change mid-season; the model's
+# internal team key above never does — this is purely cosmetic, read by build_site.py)
+team_display = {}
+for u in users_raw:
+    slot = user_slot.get(u['user_id'])
+    if slot is None:
+        continue
+    team = slot_name[slot]
+    md = u.get('metadata') or {}
+    custom_name = (md.get('team_name') or '').strip()
+    team_display[team] = {
+        'handle': u.get('display_name', team),
+        'team_name': custom_name or u.get('display_name', team),
+        'avatar': md.get('avatar') or (f"https://sleepercdn.com/avatars/{u['avatar']}" if u.get('avatar') else None),
+    }
+json.dump(team_display, open('sleeper/team_display.json', 'w'), indent=1)
 
 rid_team, rosters_out, standings = {}, {}, {}
 for r in get(f'https://api.sleeper.app/v1/league/{L}/rosters'):

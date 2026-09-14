@@ -14,6 +14,8 @@ standings = json.load(open('state/standings.json'))
 week = json.load(open('state/week.json'))
 lines = json.load(open('state/lines.json')) if os.path.exists('state/lines.json') else {}
 tendencies = json.load(open('state/tendencies.json')) if os.path.exists('state/tendencies.json') else None
+team_display = json.load(open('sleeper/team_display.json')) if os.path.exists('sleeper/team_display.json') else {}
+highlights_state = json.load(open('state/highlights.json')) if os.path.exists('state/highlights.json') else {'highlights': [], 'recaps': []}
 
 nfl_week = week.get('nfl_week', 1)
 gameday_files = sorted(glob.glob('state/week*.json'))
@@ -57,15 +59,18 @@ data = {
     'league': 'ShowMeYourTDs', 'season': 2026, 'week': nfl_week,
     'sims': meta['sims'], 'user_team': ME,
     'generated_note': 'Regenerated from live Sleeper/ESPN/DraftKings/nflverse data each pipeline run.',
+    'teams': team_display,
     'standings': odds_table,
     'matchups': matchups,
     'top_performers': performers,
     'injuries': injuries,
     'market': market,
     'tendencies': tendencies,
+    'highlights': highlights_state.get('highlights', []),
+    'recaps': highlights_state.get('recaps', []),
 }
 
 os.makedirs('site', exist_ok=True)
 json.dump(data, open('site/data.json', 'w'), indent=1)
 print(f"site/data.json written — week {nfl_week}, {len(odds_table)} teams, {len(matchups)} matchups, "
-     f"{len(performers)} performers, tendencies: {'yes' if tendencies else 'no'}")
+     f"{len(performers)} performers, {len(data['highlights'])} highlights, tendencies: {'yes' if tendencies else 'no'}")

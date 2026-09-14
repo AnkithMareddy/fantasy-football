@@ -1,6 +1,12 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-09-14 (3) - real team names/avatars + a highlights section on the site
+- refresh.py now also writes sleeper/team_display.json: each team's actual current Sleeper team_name (e.g. "ALO 5's" for uaintgotjuicehoeido, "we all we got" for kisiluv) and avatar image, pulled from user metadata. Purely cosmetic for the site — every other file in this project still keys off the stable internal team name (the Sleeper username / draft slot), which never changes even if a manager renames their team mid-season.
+- New highlights.py pulls real per-play highlight clips and recap articles from ESPN's public summary endpoint. Never clips or hosts video ourselves — every card links out to ESPN's own page. Tags each clip with any rostered player named in its headline and their fantasy owner, so the site can filter by team without a play-by-play parser.
+- Site now shows avatars + real team names everywhere (standings, matchups, performers, injuries, storylines, ticker) instead of raw Sleeper usernames, and has a Highlights panel with team-filter buttons plus a recap-article strip per game.
+- No effect on any model number — cosmetic/content additions only.
+
 ## 2026-09-14 (2) - real NFL tendencies + a public dashboard
 - New tendencies.py pulls actual play-by-play (nflverse, via nflreadpy — free, CC-BY-SA 4.0) and computes real per-team tendencies: EPA/play on offense and defense, pass rate, xpass residual (actual vs. situation-neutral expected pass rate — the standard "predictability" signal), red zone pass rate, shotgun/no-huddle rate. Entirely independent of fantasy scoring — this is what actually happened on the field. Venv-only (nflreadpy needs polars, not installed system-wide); update.sh runs it automatically if .venv/ exists, skips quietly otherwise. Provisional under ~4 weeks of data — small samples, don't overread early.
 - New build_site.py consolidates standings/odds/matchups/tendencies/market lines/top performers/injuries into site/data.json.

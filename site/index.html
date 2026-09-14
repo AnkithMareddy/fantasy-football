@@ -179,6 +179,16 @@
   .num { font-family: var(--font-mono); }
   .team-cell { display: flex; align-items: center; gap: 8px; font-weight: 500; }
   .rank { color: var(--text-faint); font-family: var(--font-mono); width: 1.4em; display: inline-block; }
+  .avatar {
+    width: 26px; height: 26px;
+    border-radius: 3px;
+    object-fit: cover;
+    flex: none;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+  }
+  .avatar.sm { width: 20px; height: 20px; border-radius: 2px; }
+  .avatar.lg { width: 40px; height: 40px; border-radius: 4px; }
   .you-flag {
     font-family: var(--font-label);
     font-size: 10px;
@@ -211,7 +221,8 @@
     align-items: center;
     padding: 5px 0;
   }
-  .matchup-row .name { font-weight: 500; }
+  .matchup-row .name { font-weight: 500; display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+  .matchup-row .name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .matchup-row .name.user { color: var(--accent); font-weight: 600; }
   .matchup-row .pct { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); }
   .matchup-row .pts { font-family: var(--font-mono); font-size: 15px; font-weight: 500; }
@@ -281,6 +292,89 @@
   footer a { color: var(--text-dim); text-decoration: underline; text-underline-offset: 2px; }
 
   .skel { color: var(--text-faint); font-family: var(--font-label); padding: 40px 20px; text-align: center; }
+
+  /* highlights */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 12px 18px 4px;
+  }
+  .filter-btn {
+    font-family: var(--font-label);
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border: 1px solid var(--line-strong);
+    padding: 5px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-btn:hover { border-color: var(--text-faint); color: var(--text); }
+  .filter-btn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .filter-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .highlight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    padding: 14px 18px 18px;
+  }
+  .highlight-card {
+    display: block;
+    text-decoration: none;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .highlight-card:hover { border-color: var(--accent); }
+  .highlight-thumb {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    display: block;
+    background: #0a0f0c;
+  }
+  .highlight-meta { padding: 10px 12px 12px; }
+  .highlight-headline {
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .highlight-tags { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .highlight-tags .avatar.sm { margin-right: -2px; }
+  .highlight-src {
+    font-family: var(--font-label);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .recap-strip {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 0 18px 14px;
+    font-family: var(--font-label);
+    font-size: 12.5px;
+  }
+  .recap-strip a {
+    color: var(--text-dim);
+    text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 1px dotted var(--line-strong);
+    flex: none;
+  }
+  .recap-strip a:hover { color: var(--accent); border-color: var(--accent); }
 </style>
 
 <header class="board">
@@ -324,7 +418,21 @@ function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 function pct(n) { return (n === null || n === undefined) ? '—' : n.toFixed(0) + '%'; }
 function pct1(n) { return (n === null || n === undefined) ? '—' : n.toFixed(1) + '%'; }
 
+let TEAMS = {};
+function teamName(key) { return (TEAMS[key] && TEAMS[key].team_name) || key; }
+function teamHandle(key) { return (TEAMS[key] && TEAMS[key].handle) || key; }
+function avatarImg(key, size) {
+  const url = TEAMS[key] && TEAMS[key].avatar;
+  const cls = size ? ' ' + size : '';
+  if (!url) return `<span class="avatar${cls}" aria-hidden="true"></span>`;
+  return `<img class="avatar${cls}" src="${esc(url)}" alt="" loading="lazy">`;
+}
+function teamLabel(key, size) {
+  return `${avatarImg(key, size)}<span>${esc(teamName(key))}</span>`;
+}
+
 function render(data) {
+  TEAMS = data.teams || {};
   document.getElementById('m-week').textContent = data.week;
   document.getElementById('m-sims').textContent = data.sims.toLocaleString();
   const now = new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
@@ -360,6 +468,13 @@ function render(data) {
       </div>
     </section>
 
+    <section class="panel" style="margin-bottom:20px;">
+      <h2>Highlights <small>via ESPN</small></h2>
+      ${recapStrip(data.recaps)}
+      <div class="filter-row" id="hl-filters"></div>
+      <div class="highlight-grid" id="hl-grid"></div>
+    </section>
+
     <div class="grid">
       <section class="panel">
         <h2>Team Tendencies <small>${data.tendencies ? 'nflverse play-by-play, wk ' + data.tendencies.weeks.join('-') : ''}</small></h2>
@@ -391,18 +506,63 @@ function render(data) {
       </section>
     </div>
   `;
+
+  initHighlights(data.highlights || []);
+}
+
+function recapStrip(recaps) {
+  if (!recaps || !recaps.length) return '';
+  return `<div class="recap-strip">${recaps.filter(r => r.link).map(r =>
+    `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.headline || r.game)}</a>`
+  ).join('')}</div>`;
+}
+
+function initHighlights(highlights) {
+  const owners = [...new Set(highlights.flatMap(h => h.owners || []))]
+    .sort((a, b) => teamName(a).localeCompare(teamName(b)));
+  const filters = document.getElementById('hl-filters');
+  const grid = document.getElementById('hl-grid');
+  if (!filters || !grid) return;
+
+  let active = 'all';
+  function draw() {
+    filters.innerHTML = [
+      `<button class="filter-btn ${active==='all'?'active':''}" data-f="all">All plays</button>`,
+      ...owners.map(o => `<button class="filter-btn ${active===o?'active':''}" data-f="${esc(o)}">${teamLabel(o,'sm')}</button>`)
+    ].join('');
+    const shown = active === 'all' ? highlights : highlights.filter(h => (h.owners||[]).includes(active));
+    grid.innerHTML = shown.length ? shown.map(highlightCard).join('') :
+      '<div class="empty-note">No highlights tagged to this team yet.</div>';
+    filters.querySelectorAll('.filter-btn').forEach(b => {
+      b.addEventListener('click', () => { active = b.dataset.f; draw(); });
+    });
+  }
+  draw();
+}
+
+function highlightCard(h) {
+  const tags = (h.owners || []).map(o => avatarImg(o, 'sm')).join('');
+  const thumb = h.thumbnail ? `<img class="highlight-thumb" src="${esc(h.thumbnail)}" alt="" loading="lazy">`
+                             : '<div class="highlight-thumb"></div>';
+  return `<a class="highlight-card" href="${esc(h.video_url)}" target="_blank" rel="noopener">
+    ${thumb}
+    <div class="highlight-meta">
+      <div class="highlight-headline">${esc(h.headline)}</div>
+      <div class="highlight-tags">${tags}<span class="highlight-src">${esc(h.game || '')}</span></div>
+    </div>
+  </a>`;
 }
 
 function renderTicker(data) {
   const items = [];
   const s = data.standings || [];
-  if (s[0]) items.push(`#1 seed pace: <b>${esc(s[0].team)}</b> (${pct(s[0].playoff_pct)} playoffs)`);
+  if (s[0]) items.push(`#1 seed pace: <b>${esc(teamName(s[0].team))}</b> (${pct(s[0].playoff_pct)} playoffs)`);
   const closest = [...(data.matchups||[])].sort((a,b) => Math.abs(a.a_winpct-50) - Math.abs(b.a_winpct-50))[0];
-  if (closest) items.push(`Closest game: <b>${esc(closest.a)}</b> vs <b>${esc(closest.b)}</b> (${closest.a_winpct}/${closest.b_winpct})`);
+  if (closest) items.push(`Closest game: <b>${esc(teamName(closest.a))}</b> vs <b>${esc(teamName(closest.b))}</b> (${closest.a_winpct}/${closest.b_winpct})`);
   const t = data.tendencies;
   if (t && t.teams && t.teams.length) {
     const mostPass = [...t.teams].sort((a,b) => (b.xpass_residual||-1)-(a.xpass_residual||-1))[0];
-    if (mostPass) items.push(`Most pass-heavy vs expected: <b>${esc(mostPass.team)}</b> (${(mostPass.xpass_residual*100).toFixed(0)}%)`);
+    if (mostPass) items.push(`Most pass-heavy vs expected (NFL): <b>${esc(mostPass.team)}</b> (${(mostPass.xpass_residual*100).toFixed(0)}%)`);
   }
   const mv = (data.market && data.market.lines) ? Object.values(data.market.lines) : [];
   items.push(`Betting lines tracked: <b>${Object.keys(data.market && data.market.lines || {}).length / 2 | 0 || (mv.length ? Math.ceil(mv.length/2) : 0)}</b> games this week`);
@@ -417,7 +577,7 @@ function standingsTable(rows) {
     </tr></thead>
     <tbody>
       ${rows.map(r => `<tr>
-        <td><span class="team-cell"><span class="rank">${r.rank}</span>${esc(r.team)}${r.is_user ? '<span class="you-flag">YOU</span>' : ''}</span></td>
+        <td><span class="team-cell"><span class="rank">${r.rank}</span>${teamLabel(r.team)}${r.is_user ? '<span class="you-flag">YOU</span>' : ''}</span></td>
         <td class="num">${r.proj_w}-${r.proj_l}</td>
         <td class="num">${r.actual_w}-${r.actual_l}</td>
         <td class="num">${r.pf.toFixed(1)}</td>
@@ -437,14 +597,14 @@ function matchupCards(matchups, userTeam) {
       const aUser = m.a === userTeam, bUser = m.b === userTeam;
       return `<div class="matchup">
         <div class="matchup-row">
-          <span class="name ${aUser?'user':''}">${esc(m.a)}</span>
+          <span class="name ${aUser?'user':''}">${teamLabel(m.a,'sm')}</span>
           <span class="pts">${m.a_pts}</span>
         </div>
         <div class="matchup-row"><span class="pct">${m.a_winpct}% win</span><span class="pct">${m.b_winpct}% win</span></div>
         <div class="win-bar"><span style="width:${m.a_winpct}%"></span></div>
         <div class="matchup-vs">VS</div>
         <div class="matchup-row">
-          <span class="name ${bUser?'user':''}">${esc(m.b)}</span>
+          <span class="name ${bUser?'user':''}">${teamLabel(m.b,'sm')}</span>
           <span class="pts">${m.b_pts}</span>
         </div>
       </div>`;
@@ -499,7 +659,7 @@ function performersList(list) {
   return list.map(p => `<div class="list-row">
     <div class="left">
       <div class="primary">${esc(p.name)} <span class="secondary">${esc(p.team)}</span></div>
-      <div class="secondary">${p.owner ? esc(p.owner) : 'free agent'}</div>
+      <div class="secondary" style="display:flex;align-items:center;gap:5px;">${p.owner ? teamLabel(p.owner,'sm') : 'free agent'}</div>
     </div>
     <div class="val">${p.pts.toFixed(1)}</div>
   </div>`).join('');
@@ -510,7 +670,7 @@ function injuriesList(list) {
   return list.map(i => `<div class="list-row">
     <div class="left">
       <div class="primary">${esc(i.player)} <span class="secondary">${esc(i.team)}</span></div>
-      <div class="secondary">${esc(i.type || '')}${i.owner ? ' · ' + esc(i.owner) : ''}</div>
+      <div class="secondary">${esc(i.type || '')}${i.owner ? ' · ' + esc(teamName(i.owner)) : ''}</div>
     </div>
     <span class="pill ${i.status === 'Out' || i.status === 'Doubtful' ? 'bad' : 'info'}">${esc(i.status || '')}</span>
   </div>`).join('');
@@ -520,9 +680,9 @@ function storylines(data) {
   const items = [];
   const s = data.standings || [];
   const user = s.find(r => r.is_user);
-  if (user) items.push(`<b>${esc(user.team)}</b> sits ${user.rank}${ordinal(user.rank)} at ${pct1(user.playoff_pct)} to make the playoffs.`);
+  if (user) items.push(`<b>${esc(teamName(user.team))}</b> sits ${user.rank}${ordinal(user.rank)} at ${pct1(user.playoff_pct)} to make the playoffs.`);
   const leader = s[0];
-  if (leader) items.push(`<b>${esc(leader.team)}</b> leads the field at ${pct1(leader.title_pct)} title odds.`);
+  if (leader) items.push(`<b>${esc(teamName(leader.team))}</b> leads the field at ${pct1(leader.title_pct)} title odds.`);
   const t = data.tendencies;
   if (t && t.teams && t.teams.length) {
     const best = [...t.teams].sort((a,b)=>b.epa_per_play_off-a.epa_per_play_off)[0];

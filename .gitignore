@@ -14,6 +14,8 @@ state/actuals.json
 state/standings.json
 state/lines.json
 state/tendencies.json
+state/highlights.json
+sleeper/team_display.json
 site/data.json
 .venv/
 state/.test_run_start

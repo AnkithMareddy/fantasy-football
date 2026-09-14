@@ -7,6 +7,7 @@ python3 season.py         >     state/latest_season_build.txt
 python3 runseason.py      | tee state/latest_odds.txt
 python3 league_table.py   | tee state/latest_league.txt
 python3 gameday.py        | tee state/latest_games.txt
+python3 highlights.py     | tee state/latest_highlights.txt
 python3 odds.py           | tee state/latest_lines.txt
 python3 startsit.py       > state/latest_startsit.txt
 

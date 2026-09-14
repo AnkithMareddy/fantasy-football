@@ -38,9 +38,11 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `startsit.py` | conservative-floor start/sit call for the user's own lineup |
 | `odds.py` | this week's Vegas lines (ESPN/DraftKings) and line movement, feeds startsit.py's game-script multiplier |
 | `tendencies.py` | real play-by-play tendencies (nflverse) — venv-only, see Setup below |
+| `highlights.py` | ESPN highlight clips + recap articles, tagged to rostered players/owners — links out only, never hosts video |
 | `build_site.py` | consolidates state into `site/data.json` for the public dashboard |
 | `site/index.html` | the public dashboard page, published as a Claude Artifact |
 | `state/site_url.txt` | the live Artifact URL — republish here, don't create a new one |
+| `sleeper/team_display.json` | current Sleeper team name + avatar per team, cosmetic only (the model's internal team key never changes) |
 | `state/scouting_notes.md` | durable team/coach patterns noticed across weeks, maintained by the report run |
 | `board.json` | preseason projections |
 | `state/injury_overrides.json` | researched injury return weeks, maintained by the report run |
