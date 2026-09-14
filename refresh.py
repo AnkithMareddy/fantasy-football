@@ -66,6 +66,7 @@ json.dump(actuals, open('state/actuals.json', 'w'), indent=1)
 # in-progress week: which starters already played, and their real points
 live_detail = {}
 played = set()
+bench_points = {}
 if cur not in actuals and cur <= 14:
     for e in get(f'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week={cur}').get('events', []):
         if e['competitions'][0]['status']['type']['name'] != 'STATUS_SCHEDULED':
@@ -75,12 +76,19 @@ if cur not in actuals and cur <= 14:
         team = rid_team.get(m['roster_id'])
         if not team: continue
         sp = m.get('starters_points') or []
+        starter_ids = set(m.get('starters') or [])
         live_detail[team] = [
             {'pid': pid, 'name': P.get(pid, {}).get('n', pid), 'pos': P.get(pid, {}).get('p'),
              'nfl': P.get(pid, {}).get('t'), 'pts': (sp[i] if i < len(sp) else 0) or 0,
              'played': P.get(pid, {}).get('t') in played, 'slot': i}
             for i, pid in enumerate(m.get('starters') or []) if pid and pid != '0']
-json.dump({'nfl_week': cur, 'live': live, 'live_detail': live_detail, 'played_teams': sorted(played)},
+        # bench players' actual points this week too, so start/sit can see what a benched player scored
+        pp = m.get('players_points') or {}
+        bench_points[team] = {
+            pid: round(pts or 0, 2) for pid, pts in pp.items()
+            if pid not in starter_ids and P.get(pid, {}).get('t') in played}
+json.dump({'nfl_week': cur, 'live': live, 'live_detail': live_detail,
+           'bench_points': bench_points, 'played_teams': sorted(played)},
           open('state/week.json', 'w'), indent=1)
 
 print(f"NFL week {cur} | final fantasy weeks locked in: {sorted(actuals) or 'none yet'}")
