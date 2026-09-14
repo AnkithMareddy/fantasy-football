@@ -5,10 +5,13 @@ against a conservative-projection optimal lineup, and flags any slot where a ben
 projects higher than the starter in the same slot group.
 
 Conservative projection = season.py's ppg, discounted by half a position's weekly coefficient
-of variation (runseason.py's CV), so a boom-or-bust player has to clear a real bar before we'd
-bench a steadier one for them. Already-played games use the real score, never a projection.
-Players out this week (bye, injury_overrides return_week, or a Sleeper OUT/DOUBTFUL/IR/PUP/SUS/NA
-status) are floored to 0 and flagged as unavailable rather than benched for underperforming.
+of variation (runseason.py's CV), then scaled by this week's Vegas-implied game script from
+odds.py's state/lines.json (capped 0.85-1.15, RB/WR skewed opposite ways on a big spread) — so
+a player in a high-scoring shootout gets a bump and one in a low-implied-total blowout gets
+trimmed, without letting one week's line swing a projection wildly. Already-played games use the
+real score, never a projection. Players out this week (bye, injury_overrides return_week, or a
+Sleeper OUT/DOUBTFUL/IR/PUP/SUS/NA status) are floored to 0 and flagged as unavailable rather
+than benched for underperforming.
 
 Prints to stdout — update.sh redirects that to state/latest_startsit.txt.
 Read-only otherwise: never edits the roster or the live Sleeper lineup."""
@@ -35,6 +38,20 @@ bench_actual = wj.get('bench_points', {}).get(TEAM, {})
 OVR = {}
 if os.path.exists('state/injury_overrides.json'):
     OVR = {norm(k): v for k, v in json.load(open('state/injury_overrides.json')).items() if not k.startswith('_')}
+
+LINES = {}
+if os.path.exists('state/lines.json'):
+    LINES = json.load(open('state/lines.json'))
+
+def game_script_mult(p):
+    line = LINES.get(p.get('tm'))
+    if not line:
+        return 1.0
+    if p['pos'] == 'RB':
+        return line['rb_mult']
+    if p['pos'] in ('WR', 'TE'):
+        return line['wr_mult']
+    return line['mult']
 
 by_pid = {p['pid']: p for p in roster if p.get('pid')}
 current_starter_pids = {row['pid'] for row in live}
@@ -67,7 +84,7 @@ def value_for(p):
         return 0.0, 'actual'
     if reason:
         return 0.0, reason
-    floor = p['ppg'] * (1 - BUFFER_K * CV.get(p['pos'], 0.5))
+    floor = p['ppg'] * (1 - BUFFER_K * CV.get(p['pos'], 0.5)) * game_script_mult(p)
     return round(floor, 2), 'proj'
 
 rows = []
@@ -138,6 +155,25 @@ bench_rows = sorted([r for r in rows if not r['starting']], key=lambda r: -r['va
 for r in bench_rows:
     tagstr = 'BYE' if r['tag'] == 'BYE' else (r['tag'] if r['tag'] not in ('proj', 'actual') else '')
     suffix = f" [{tagstr}]" if tagstr else (' [actual]' if r['tag'] == 'actual' else '')
+    m = game_script_mult(r) if r['tag'] == 'proj' else None
+    if m is not None and abs(m - 1.0) >= 0.03:
+        line = LINES.get(r.get('tm'), {})
+        suffix += f" (line: {r['tm']} {'fav' if line.get('spread', 0) < 0 else 'dog'} "
+        suffix += f"{line.get('spread')}, O/U {line.get('total')}, {'up' if m > 1 else 'down'} {abs(m-1)*100:.0f}%)"
     lines.append(f"  {r['n']:<22} {r['pos']:<4} {r['val']:>5.1f}{suffix}")
+
+lines.append("")
+lines.append("Starters with a notably shifted line this week:")
+starter_line_notes = []
+for r in rows:
+    if not r['starting'] or r['tag'] != 'proj':
+        continue
+    m = game_script_mult(r)
+    if abs(m - 1.0) >= 0.03:
+        line = LINES.get(r.get('tm'), {})
+        starter_line_notes.append(
+            f"  {r['n']:<22} {r['pos']:<4} {'fav' if line.get('spread', 0) < 0 else 'dog'} "
+            f"{line.get('spread')}, O/U {line.get('total')} -> floor {'up' if m > 1 else 'down'} {abs(m-1)*100:.0f}%")
+lines += starter_line_notes if starter_line_notes else ["  None."]
 
 print("\n".join(lines))

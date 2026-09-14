@@ -34,6 +34,8 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `league_table.py` | phone-friendly league odds and this week's matchups |
 | `gameday.py` | box scores under league scoring, injuries, free agents who produced |
 | `startsit.py` | conservative-floor start/sit call for the user's own lineup |
+| `odds.py` | this week's Vegas lines (ESPN/DraftKings), turned into a capped game-script multiplier startsit.py applies |
+| `state/scouting_notes.md` | durable team/coach patterns noticed across weeks, maintained by the report run |
 | `board.json` | preseason projections |
 | `state/injury_overrides.json` | researched injury return weeks, maintained by the report run |
 | `state/role_overrides.json` | evidenced role changes, maintained by the report run |
