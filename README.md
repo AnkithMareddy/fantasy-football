@@ -12,7 +12,7 @@ Season model and post-slate reports for my Sleeper league: ShowMeYourTDs, 12 tea
 - Produces playoff, bye, #1 seed, finals, and title odds for all 12 teams.
 - Pulls real NFL play-by-play (nflverse) for team tendencies — EPA/play, pass rate, xpass residual — independent of fantasy scoring.
 - Texts a written report through Messages after each NFL slate.
-- Publishes a public dashboard (standings, matchups, tendencies, market watch) as a Claude Artifact, refreshed automatically each run.
+- Publishes a public dashboard (standings, matchups, tendencies, market watch, highlights) to a real site, refreshed automatically each run: **https://ankithmareddy.github.io/showmeyourtds/**
 
 ## Running it
 
@@ -40,8 +40,8 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `tendencies.py` | real play-by-play tendencies (nflverse) — venv-only, see Setup below |
 | `highlights.py` | ESPN highlight clips + recap articles, tagged to rostered players/owners — links out only, never hosts video |
 | `build_site.py` | consolidates state into `site/data.json` for the public dashboard |
-| `site/index.html` | the public dashboard page, published as a Claude Artifact |
-| `state/site_url.txt` | the live Artifact URL — republish here, don't create a new one |
+| `site/index.html` | the public dashboard page (an unwrapped HTML fragment — see deploy_site.sh) |
+| `deploy_site.sh` | wraps site/index.html + data.json and pushes them to the public showmeyourtds repo (GitHub Pages) |
 | `sleeper/team_display.json` | current Sleeper team name + avatar per team, cosmetic only (the model's internal team key never changes) |
 | `state/scouting_notes.md` | durable team/coach patterns noticed across weeks, maintained by the report run |
 | `board.json` | preseason projections |
@@ -59,7 +59,7 @@ Two Claude scheduled tasks:
 
 Both need the Claude app open and the Mac awake. `sudo pmset -a disablesleep 1` and `sudo pmset -a displaysleep 0` keep it from idle-sleeping, but a MacBook with the lid closed and no external display still force-sleeps regardless — leave the lid open (or attach an external display while on power) for these to fire reliably.
 
-The Sunday/Tuesday/Friday task also republishes the public dashboard (state/site_url.txt) as its last step.
+The Sunday/Tuesday/Friday task also redeploys the public site (`deploy_site.sh`) as its last step. Live at https://ankithmareddy.github.io/showmeyourtds/, source at [AnkithMareddy/showmeyourtds](https://github.com/AnkithMareddy/showmeyourtds) (public — built site only, no model code or rosters beyond what's already shown on the page).
 
 ## Setup: tendencies.py
 
