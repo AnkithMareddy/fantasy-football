@@ -44,10 +44,11 @@ for u in users_raw:
     team = slot_name[slot]
     md = u.get('metadata') or {}
     custom_name = (md.get('team_name') or '').strip()
+    avatar_url = md.get('avatar') or (f"https://sleepercdn.com/avatars/{u['avatar']}" if u.get('avatar') else None)
     team_display[team] = {
         'handle': u.get('display_name', team),
         'team_name': custom_name or u.get('display_name', team),
-        'avatar': md.get('avatar') or (f"https://sleepercdn.com/avatars/{u['avatar']}" if u.get('avatar') else None),
+        'avatar': avatar_url,
     }
 json.dump(team_display, open('sleeper/team_display.json', 'w'), indent=1)
 
