@@ -63,6 +63,7 @@ for e in data.get('events', []):
     away = next(c for c in comp['competitors'] if c['homeAway'] == 'away')
     home_ab = home['team']['abbreviation']
     away_ab = away['team']['abbreviation']
+    kickoff = e.get('date')   # ISO 8601 UTC, e.g. "2026-09-18T00:15Z"
     home_spread, away_spread = spread, -spread
     home_implied = (total + (-home_spread)) / 2
     away_implied = (total + (-away_spread)) / 2
@@ -78,7 +79,7 @@ for e in data.get('events', []):
                      'implied': round(implied, 1), 'mult': round(mult, 3),
                      'rb_mult': round(max(LO, min(HI, mult + rb_skew)), 3),
                      'wr_mult': round(max(LO, min(HI, mult + wr_skew)), 3),
-                     'home': ab == home_ab}
+                     'home': ab == home_ab, 'kickoff': kickoff}
     fav_ab, dog_ab = (home_ab, away_ab) if home_spread < 0 else (away_ab, home_ab)
     rows.append(f"{away_ab} @ {home_ab}: {fav_ab} -{abs(spread)}, O/U {total} "
                 f"(implied {lines[home_ab]['implied']}-{lines[away_ab]['implied']})")
