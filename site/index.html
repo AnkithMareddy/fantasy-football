@@ -594,7 +594,7 @@ function render(data) {
     </div>
   `;
 
-  initHighlights(data.highlights || []);
+  initHighlights(data.highlights || [], data.user_team);
 }
 
 function headshot(pid, pos) {
@@ -693,20 +693,24 @@ function recapStrip(recaps) {
   ).join('')}</div>`;
 }
 
-function initHighlights(highlights) {
+function initHighlights(highlights, userTeam) {
   const owners = [...new Set(highlights.flatMap(h => h.owners || []))]
     .sort((a, b) => teamName(a).localeCompare(teamName(b)));
   const filters = document.getElementById('hl-filters');
   const grid = document.getElementById('hl-grid');
   if (!filters || !grid) return;
+  if (!owners.length) {
+    filters.innerHTML = '';
+    grid.innerHTML = '<div class="empty-note">No highlights tagged to a team yet.</div>';
+    return;
+  }
 
-  let active = 'all';
+  let active = owners.includes(userTeam) ? userTeam : owners[0];
   function draw() {
-    filters.innerHTML = [
-      `<button class="filter-btn ${active==='all'?'active':''}" data-f="all">All plays</button>`,
-      ...owners.map(o => `<button class="filter-btn ${active===o?'active':''}" data-f="${esc(o)}">${teamLabel(o,'sm')}</button>`)
-    ].join('');
-    const shown = active === 'all' ? highlights : highlights.filter(h => (h.owners||[]).includes(active));
+    filters.innerHTML = owners.map(o =>
+      `<button class="filter-btn ${active===o?'active':''}" data-f="${esc(o)}">${teamLabel(o,'sm')}</button>`
+    ).join('');
+    const shown = highlights.filter(h => (h.owners||[]).includes(active));
     grid.innerHTML = shown.length ? shown.map(highlightCard).join('') :
       '<div class="empty-note">No highlights tagged to this team yet.</div>';
     filters.querySelectorAll('.filter-btn').forEach(b => {
