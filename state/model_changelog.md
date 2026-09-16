@@ -1,6 +1,11 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-09-15 - weekly awards (Sleeper-report style)
+- New weekly_awards.py targets the most recently completed week and pulls that week's real matchup data straight from Sleeper (starters/starters_points/players_points, already under our league's actual scoring). Computes: best/worst team, highest points in a loss, lowest points in a win, players of the week and benchwarmers of the week by position (league-wide, with real player headshots via sleepercdn.com), and lineup efficiency (actual starters' points / the best possible lineup from that team's full roster, computed post-hoc the same way startsit.py projects pre-hoc).
+- Validated directly against the user's own Sleeper app screenshots — every number matched exactly once "players of the week" was corrected to only consider started players (not bench).
+- Read-only: doesn't touch the season simulation, injury/role overrides, or any other model number. Pure recap/content addition.
+
 ## 2026-09-14 (3) - real team names/avatars + a highlights section on the site
 - refresh.py now also writes sleeper/team_display.json: each team's actual current Sleeper team_name (e.g. "ALO 5's" for uaintgotjuicehoeido, "we all we got" for kisiluv) and avatar image, pulled from user metadata. Purely cosmetic for the site — every other file in this project still keys off the stable internal team name (the Sleeper username / draft slot), which never changes even if a manager renames their team mid-season.
 - New highlights.py pulls real per-play highlight clips and recap articles from ESPN's public summary endpoint. Never clips or hosts video ourselves — every card links out to ESPN's own page. Tags each clip with any rostered player named in its headline and their fantasy owner, so the site can filter by team without a play-by-play parser.

@@ -15,6 +15,7 @@ state/standings.json
 state/lines.json
 state/tendencies.json
 state/highlights.json
+state/weekly_awards.json
 sleeper/team_display.json
 site/data.json
 .venv/

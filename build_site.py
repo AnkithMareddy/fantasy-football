@@ -16,6 +16,7 @@ lines = json.load(open('state/lines.json')) if os.path.exists('state/lines.json'
 tendencies = json.load(open('state/tendencies.json')) if os.path.exists('state/tendencies.json') else None
 team_display = json.load(open('sleeper/team_display.json')) if os.path.exists('sleeper/team_display.json') else {}
 highlights_state = json.load(open('state/highlights.json')) if os.path.exists('state/highlights.json') else {'highlights': [], 'recaps': []}
+weekly_awards = json.load(open('state/weekly_awards.json')) if os.path.exists('state/weekly_awards.json') else None
 
 nfl_week = week.get('nfl_week', 1)
 gameday_files = sorted(glob.glob('state/week*.json'))
@@ -68,6 +69,7 @@ data = {
     'tendencies': tendencies,
     'highlights': highlights_state.get('highlights', []),
     'recaps': highlights_state.get('recaps', []),
+    'weekly_awards': weekly_awards,
 }
 
 os.makedirs('site', exist_ok=True)

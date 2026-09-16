@@ -387,6 +387,79 @@
     flex: none;
   }
   .recap-strip a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* weekly awards */
+  .award-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 1px;
+  }
+  .award-card {
+    background: var(--surface);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .award-card .label {
+    font-family: var(--font-label);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .award-card .value { font-family: var(--font-mono); font-size: 20px; font-weight: 600; }
+  .award-card .sub { font-family: var(--font-label); font-size: 12px; color: var(--text-dim); }
+  .award-card.best .value { color: var(--good); }
+  .award-card.worst .value { color: var(--bad); }
+
+  .position-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .position-card {
+    background: var(--surface);
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .position-card .pos-label {
+    font-family: var(--font-label);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .headshot {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    margin: 0 auto 8px;
+    display: block;
+  }
+  .headshot.def {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 16px; color: var(--text-dim);
+  }
+  .position-card .pname { font-size: 12.5px; font-weight: 500; margin-bottom: 2px; line-height: 1.25; }
+  .position-card .ppts { font-family: var(--font-mono); font-size: 17px; font-weight: 600; color: var(--accent); }
+  .position-card .powner { font-family: var(--font-label); font-size: 10.5px; color: var(--text-faint); margin-top: 3px; }
+
+  .eff-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+  .eff-row .eff-name { flex: 0 0 150px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 7px; overflow: hidden; }
+  .eff-row .eff-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .eff-bar-track { flex: 1; height: 16px; background: var(--surface-2); border-radius: 2px; overflow: hidden; position: relative; }
+  .eff-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+  .eff-pct { flex: 0 0 42px; text-align: right; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-dim); }
 </style>
 
 <header class="board">
@@ -480,6 +553,8 @@ function render(data) {
       </div>
     </section>
 
+    ${weeklyAwardsSection(data.weekly_awards)}
+
     <section class="panel" style="margin-bottom:20px;">
       <h2>Highlights <small>via ESPN</small></h2>
       ${recapStrip(data.recaps)}
@@ -520,6 +595,95 @@ function render(data) {
   `;
 
   initHighlights(data.highlights || []);
+}
+
+function headshot(pid, pos) {
+  if (pos === 'DEF') {
+    return `<div class="headshot def">${esc(pid)}</div>`;
+  }
+  return `<img class="headshot" src="https://sleepercdn.com/content/nfl/players/${esc(pid)}.jpg" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
+}
+
+function positionCard(entry) {
+  if (!entry) return '';
+  return `<div class="position-card">
+    <div class="pos-label">${esc(entry.pos)}</div>
+    ${headshot(entry.pid, entry.pos)}
+    <div class="pname">${esc(entry.name)}</div>
+    <div class="ppts">${entry.pts.toFixed(1)}</div>
+    <div class="powner">${teamLabel(entry.team, 'sm')}</div>
+  </div>`;
+}
+
+function weeklyAwardsSection(a) {
+  if (!a || !a.week) return '';
+  const POS_ORDER = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+  const potw = POS_ORDER.map(p => a.players_of_week[p]).filter(Boolean);
+  const bench = POS_ORDER.map(p => a.benchwarmers_of_week[p]).filter(Boolean);
+  return `
+    <section class="panel gold-accent" style="margin-bottom:20px;">
+      <h2>Week ${a.week} Awards</h2>
+      <div class="award-cards">
+        <div class="award-card best">
+          <div>
+            <div class="label">Best Team</div>
+            <div class="value">${a.best_team.actual.toFixed(1)}</div>
+            <div class="sub">${teamName(a.best_team.team)}</div>
+          </div>
+        </div>
+        <div class="award-card worst">
+          <div>
+            <div class="label">Worst Team</div>
+            <div class="value">${a.worst_team.actual.toFixed(1)}</div>
+            <div class="sub">${teamName(a.worst_team.team)}</div>
+          </div>
+        </div>
+        <div class="award-card">
+          <div>
+            <div class="label">Most Efficient</div>
+            <div class="value">${a.most_efficient.efficiency}%</div>
+            <div class="sub">${teamName(a.most_efficient.team)}</div>
+          </div>
+        </div>
+        <div class="award-card">
+          <div>
+            <div class="label">Least Efficient</div>
+            <div class="value">${a.least_efficient.efficiency}%</div>
+            <div class="sub">${teamName(a.least_efficient.team)}</div>
+          </div>
+        </div>
+        ${a.highest_pts_in_loss ? `<div class="award-card">
+          <div>
+            <div class="label">Highest Pts in a Loss</div>
+            <div class="value">${a.highest_pts_in_loss.actual.toFixed(1)}</div>
+            <div class="sub">${teamName(a.highest_pts_in_loss.team)}</div>
+          </div>
+        </div>` : ''}
+        ${a.lowest_pts_in_win ? `<div class="award-card">
+          <div>
+            <div class="label">Lowest Pts in a Win</div>
+            <div class="value">${a.lowest_pts_in_win.actual.toFixed(1)}</div>
+            <div class="sub">${teamName(a.lowest_pts_in_win.team)}</div>
+          </div>
+        </div>` : ''}
+      </div>
+      <div class="panel-body" style="padding-top:18px;">
+        <h2 style="padding:0 0 10px;font-size:17px;">Players of the Week</h2>
+        <div class="position-grid" style="margin-bottom:20px;">
+          ${potw.map(positionCard).join('')}
+        </div>
+        <h2 style="padding:0 0 10px;font-size:17px;">Benchwarmers of the Week</h2>
+        <div class="position-grid" style="margin-bottom:20px;">
+          ${bench.map(positionCard).join('')}
+        </div>
+        <h2 style="padding:0 0 10px;font-size:17px;">Lineup Efficiency <small style="font-family:var(--font-label);font-size:12px;color:var(--text-faint);">actual starters vs. best possible lineup</small></h2>
+        ${a.efficiency_rank.map(r => `<div class="eff-row">
+          <div class="eff-name">${teamLabel(r.team, 'sm')}</div>
+          <div class="eff-bar-track"><div class="eff-bar-fill" style="width:${r.efficiency}%"></div></div>
+          <div class="eff-pct">${r.efficiency}%</div>
+        </div>`).join('')}
+      </div>
+    </section>`;
 }
 
 function recapStrip(recaps) {

@@ -39,6 +39,7 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `odds.py` | this week's Vegas lines (ESPN/DraftKings) and line movement, feeds startsit.py's game-script multiplier |
 | `tendencies.py` | real play-by-play tendencies (nflverse) — venv-only, see Setup below |
 | `highlights.py` | ESPN highlight clips + recap articles, tagged to rostered players/owners — links out only, never hosts video |
+| `weekly_awards.py` | Sleeper-report-style weekly awards: best/worst team, players/benchwarmers of the week, lineup efficiency |
 | `build_site.py` | consolidates state into `site/data.json` for the public dashboard |
 | `site/index.html` | the public dashboard page (an unwrapped HTML fragment — see deploy_site.sh) |
 | `deploy_site.sh` | wraps site/index.html + data.json and pushes them to the public showmeyourtds repo (GitHub Pages) |
