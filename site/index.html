@@ -281,6 +281,19 @@
   }
   .pill.bad { background: var(--bad-soft); color: var(--bad); }
   .pill.info { background: rgba(111,168,216,0.14); color: var(--info); }
+  .pill.good { background: var(--good-soft); color: var(--good); }
+
+  .waiver-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .waiver-row:last-child { border-bottom: none; }
+  .waiver-row .wmoves { font-size: 13px; line-height: 1.5; }
+  .waiver-row .wmoves .add { color: var(--good); }
+  .waiver-row .wmoves .drop { color: var(--bad); }
+  .faab-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+  .faab-row .fname { flex: 0 0 150px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 7px; overflow: hidden; }
+  .faab-row .fname span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .faab-bar-track { flex: 1; height: 16px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+  .faab-bar-fill { height: 100%; background: var(--good); border-radius: 2px; }
+  .faab-val { flex: 0 0 46px; text-align: right; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-dim); }
 
   .empty-note {
     color: var(--text-faint);
@@ -554,6 +567,21 @@ function render(data) {
     </section>
 
     ${weeklyAwardsSection(data.weekly_awards)}
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Waiver Wire <small>league-wide, since the last check</small></h2>
+        <div class="panel-body">
+          ${waiverMoves(data.waivers)}
+        </div>
+      </section>
+      <section class="panel">
+        <h2>FAAB Remaining <small>of $100</small></h2>
+        <div class="panel-body">
+          ${faabBoard(data.waivers, data.user_team)}
+        </div>
+      </section>
+    </div>
 
     <section class="panel" style="margin-bottom:20px;">
       <h2>Highlights <small>via ESPN</small></h2>
@@ -865,6 +893,33 @@ function injuriesList(list) {
       <div class="secondary">${esc(i.type || '')}${i.owner ? ' · ' + esc(teamName(i.owner)) : ''}</div>
     </div>
     <span class="pill ${i.status === 'Out' || i.status === 'Doubtful' ? 'bad' : 'info'}">${esc(i.status || '')}</span>
+  </div>`).join('');
+}
+
+function waiverMoves(w) {
+  const moves = (w && w.moves) || [];
+  if (!moves.length) return '<div class="empty-note">No moves cleared since the last check.</div>';
+  return moves.map(m => {
+    const add = m.added.map(p => `<span class="add">+${esc(p.name)}</span> <span class="secondary">(${esc(p.pos)})</span>`).join(', ') || '<span class="secondary">nothing</span>';
+    const drop = m.dropped.map(p => `<span class="drop">-${esc(p.name)}</span> <span class="secondary">(${esc(p.pos)})</span>`).join(', ');
+    const bid = m.type === 'waiver' ? `<span class="pill good">$${m.faab} FAAB</span>` : '<span class="pill info">FREE AGENT</span>';
+    return `<div class="waiver-row">
+      <div class="wmoves">
+        ${teamLabel(m.team, 'sm')}<br>${add}${drop ? ', ' + drop : ''}
+      </div>
+      ${bid}
+    </div>`;
+  }).join('');
+}
+
+function faabBoard(w, userTeam) {
+  const left = (w && w.faab_left) || {};
+  const rows = Object.entries(left).sort((a, b) => b[1] - a[1]);
+  if (!rows.length) return '<div class="empty-note">No FAAB data yet.</div>';
+  return rows.map(([team, val]) => `<div class="faab-row">
+    <div class="fname">${teamLabel(team, 'sm')}</div>
+    <div class="faab-bar-track"><div class="faab-bar-fill" style="width:${val}%"></div></div>
+    <div class="faab-val">$${val}</div>
   </div>`).join('');
 }
 

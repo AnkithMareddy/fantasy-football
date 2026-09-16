@@ -11,6 +11,7 @@ python3 highlights.py     | tee state/latest_highlights.txt
 python3 odds.py           | tee state/latest_lines.txt
 python3 startsit.py       > state/latest_startsit.txt
 python3 weekly_awards.py  | tee state/latest_awards.txt
+python3 waivers.py        | tee state/latest_waivers.txt
 
 # tendencies.py needs the venv (nflreadpy/polars) — skip quietly if it hasn't been set up
 if [ -x .venv/bin/python3 ]; then

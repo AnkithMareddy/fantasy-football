@@ -17,6 +17,7 @@ tendencies = json.load(open('state/tendencies.json')) if os.path.exists('state/t
 team_display = json.load(open('sleeper/team_display.json')) if os.path.exists('sleeper/team_display.json') else {}
 highlights_state = json.load(open('state/highlights.json')) if os.path.exists('state/highlights.json') else {'highlights': [], 'recaps': []}
 weekly_awards = json.load(open('state/weekly_awards.json')) if os.path.exists('state/weekly_awards.json') else None
+waivers = json.load(open('state/waivers.json')) if os.path.exists('state/waivers.json') else None
 
 nfl_week = week.get('nfl_week', 1)
 gameday_files = sorted(glob.glob('state/week*.json'))
@@ -70,9 +71,11 @@ data = {
     'highlights': highlights_state.get('highlights', []),
     'recaps': highlights_state.get('recaps', []),
     'weekly_awards': weekly_awards,
+    'waivers': waivers,
 }
 
 os.makedirs('site', exist_ok=True)
 json.dump(data, open('site/data.json', 'w'), indent=1)
 print(f"site/data.json written — week {nfl_week}, {len(odds_table)} teams, {len(matchups)} matchups, "
-     f"{len(performers)} performers, {len(data['highlights'])} highlights, tendencies: {'yes' if tendencies else 'no'}")
+     f"{len(performers)} performers, {len(data['highlights'])} highlights, "
+     f"{len(waivers['moves']) if waivers else 0} waiver moves, tendencies: {'yes' if tendencies else 'no'}")

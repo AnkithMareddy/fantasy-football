@@ -1,6 +1,12 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-09-16 - league-wide waiver wire + FAAB tracking
+- New waivers.py pulls Sleeper's real transactions feed for every team (not just ours) — every completed waiver claim (with its actual $ bid) and free-agent pickup, plus every team's remaining FAAB out of $100 (from roster settings, already tracked by refresh.py). Keeps a bookmark (state/waivers_seen.json) so each run only reports what cleared since the last one, not the whole season's history.
+- Site: new "Waiver Wire" / "FAAB Remaining" panels under Week Awards — league-wide moves with add/drop and bid amount, plus a FAAB leaderboard bar chart.
+- Report: the personal WAIVERS section now reads state/latest_waivers.txt so our own claim advice accounts for what rivals just spent and how much budget they have left, not just our own bids in isolation.
+- Read-only: doesn't touch the season sim, injury/role overrides, or any projection number. Pure context addition.
+
 ## 2026-09-15 - weekly awards (Sleeper-report style)
 - New weekly_awards.py targets the most recently completed week and pulls that week's real matchup data straight from Sleeper (starters/starters_points/players_points, already under our league's actual scoring). Computes: best/worst team, highest points in a loss, lowest points in a win, players of the week and benchwarmers of the week by position (league-wide, with real player headshots via sleepercdn.com), and lineup efficiency (actual starters' points / the best possible lineup from that team's full roster, computed post-hoc the same way startsit.py projects pre-hoc).
 - Validated directly against the user's own Sleeper app screenshots — every number matched exactly once "players of the week" was corrected to only consider started players (not bench).
