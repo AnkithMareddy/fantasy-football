@@ -295,6 +295,16 @@
   .faab-bar-fill { height: 100%; background: var(--good); border-radius: 2px; }
   .faab-val { flex: 0 0 46px; text-align: right; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-dim); }
 
+  .injpred-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .injpred-row:last-child { border-bottom: none; }
+  .injpred-top { display: flex; align-items: center; gap: 10px; }
+  .injpred-name { flex: 1; min-width: 0; font-size: 13.5px; }
+  .injpred-name .pname { font-weight: 500; }
+  .injpred-bar-track { flex: 0 0 90px; height: 14px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+  .injpred-bar-fill { height: 100%; background: var(--bad); border-radius: 2px; }
+  .injpred-games { flex: 0 0 70px; text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+  .injpred-note { font-size: 12px; color: var(--text-faint); font-family: var(--font-label); margin-top: 5px; line-height: 1.5; }
+
   .empty-note {
     color: var(--text-faint);
     font-family: var(--font-label);
@@ -620,6 +630,13 @@ function render(data) {
         </div>
       </section>
     </div>
+
+    <section class="panel" style="margin-bottom:20px;">
+      <h2>Injury Predictions <small>expected games missed, 10,000-sim harsh model</small></h2>
+      <div class="panel-body">
+        ${injuryPredictionsList(data.injury_predictions)}
+      </div>
+    </section>
   `;
 
   initHighlights(data.highlights || [], data.user_team);
@@ -894,6 +911,29 @@ function injuriesList(list) {
     </div>
     <span class="pill ${i.status === 'Out' || i.status === 'Doubtful' ? 'bad' : 'info'}">${esc(i.status || '')}</span>
   </div>`).join('');
+}
+
+function injuryPredictionsList(list) {
+  if (!list || !list.length) return '<div class="empty-note">No meaningful injury risk projected right now.</div>';
+  const maxG = Math.max(...list.map(r => r.expected_games_missed), 1);
+  return list.map(r => {
+    const researched = !!(r.return_week || r.note);
+    const statusPill = r.current_status ? `<span class="pill ${['Out','Doubtful','IR','PUP','NA','SUS'].includes(r.current_status) ? 'bad' : 'info'}">${esc(r.current_status)}</span>` : '';
+    const returnPill = r.return_week ? `<span class="pill good">BACK WK ${r.return_week}</span>` : (researched ? '' : '<span class="pill info">MODEL EST.</span>');
+    return `<div class="injpred-row">
+      <div class="injpred-top">
+        <div class="injpred-name">
+          <span class="pname">${esc(r.name)}</span> <span class="secondary">${esc(r.pos || '')} · ${esc(r.nfl_team || '')}</span><br>
+          <span class="secondary">${teamLabel(r.team, 'sm')}</span>
+        </div>
+        ${statusPill}
+        ${returnPill}
+        <div class="injpred-bar-track"><div class="injpred-bar-fill" style="width:${Math.min(100, r.expected_games_missed / maxG * 100)}%"></div></div>
+        <div class="injpred-games">${r.expected_games_missed.toFixed(1)} gms</div>
+      </div>
+      ${r.note ? `<div class="injpred-note">${esc(r.note)}${r.source ? ' — <span style="opacity:.75">' + esc(r.source) + '</span>' : ''}</div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 function waiverMoves(w) {

@@ -1,6 +1,10 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-09-17 - injury predictions on the site + a gameday-file bug fix
+- New "Injury Predictions" panel on the site: the harsh injury model's expected-games-missed per player (season_out.json's `games_missed`, already computed by runseason.py every run) enriched with researched return weeks/notes/sources from state/injury_overrides.json where we have them, and a "MODEL EST." tag when we don't (pure hazard-rate risk, no specific known injury). Read-only — this surfaces a number the sim already produces, it doesn't change any projection.
+- Fixed a real bug in build_site.py: its gameday-file glob (`state/week*.json`) also matched `state/weekly_awards.json`, and that sorted alphabetically *after* `state/week2.json` — so "Top Performers" and "Injury Report" were silently reading the wrong file (weekly_awards.json, which has neither key) and showing empty every run once weekly_awards.py existed. Fixed to match `state/week[0-9]*.json` only, sorted by actual week number (so it won't break again at week 10+ once weeks stop sorting alphabetically the same as numerically).
+
 ## 2026-09-16 - league-wide waiver wire + FAAB tracking
 - New waivers.py pulls Sleeper's real transactions feed for every team (not just ours) — every completed waiver claim (with its actual $ bid) and free-agent pickup, plus every team's remaining FAAB out of $100 (from roster settings, already tracked by refresh.py). Keeps a bookmark (state/waivers_seen.json) so each run only reports what cleared since the last one, not the whole season's history.
 - Site: new "Waiver Wire" / "FAAB Remaining" panels under Week Awards — league-wide moves with add/drop and bid amount, plus a FAAB leaderboard bar chart.

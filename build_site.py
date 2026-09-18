@@ -18,10 +18,12 @@ team_display = json.load(open('sleeper/team_display.json')) if os.path.exists('s
 highlights_state = json.load(open('state/highlights.json')) if os.path.exists('state/highlights.json') else {'highlights': [], 'recaps': []}
 weekly_awards = json.load(open('state/weekly_awards.json')) if os.path.exists('state/weekly_awards.json') else None
 waivers = json.load(open('state/waivers.json')) if os.path.exists('state/waivers.json') else None
+injury_overrides = {k: v for k, v in json.load(open('state/injury_overrides.json')).items() if not k.startswith('_')} \
+    if os.path.exists('state/injury_overrides.json') else {}
 
 nfl_week = week.get('nfl_week', 1)
-gameday_files = sorted(glob.glob('state/week*.json'))
-gameday_files = [f for f in gameday_files if f != 'state/week.json']
+gameday_files = sorted(glob.glob('state/week[0-9]*.json'),
+                       key=lambda f: int(os.path.basename(f)[4:-5]))
 gameday = json.load(open(gameday_files[-1])) if gameday_files else {'players': [], 'injuries': []}
 
 seas = season_out['season']
@@ -57,6 +59,40 @@ injuries = gameday.get('injuries', [])[:15]
 
 market = {'lines': lines, 'week': nfl_week}
 
+# injury predictions: the harsh-model's expected games missed (season_out['games_missed'],
+# key "Name | FantasyTeam") enriched with researched return weeks/notes where we have them.
+player_info = {}
+for t, roster in season_in['teams'].items():
+    for p in roster:
+        player_info[(p['n'], t)] = p
+
+games_missed = season_out.get('games_missed', {})
+predictions = {}
+for key, g in games_missed.items():
+    name, team = key.rsplit(' | ', 1)
+    info = player_info.get((name, team), {})
+    ovr = injury_overrides.get(name)
+    predictions[name] = {
+        'name': name, 'team': team, 'pos': info.get('pos'), 'nfl_team': info.get('tm'),
+        'pid': info.get('pid'), 'current_status': info.get('inj'),
+        'expected_games_missed': round(g, 1),
+        'return_week': ovr.get('return_week') if ovr else None,
+        'note': ovr.get('note') if ovr else None, 'source': ovr.get('source') if ovr else None,
+    }
+for name, ovr in injury_overrides.items():
+    if name in predictions:
+        continue
+    hit = next(((t, p) for (n, t), p in player_info.items() if n == name), None)
+    if not hit:
+        continue
+    t, info = hit
+    predictions[name] = {
+        'name': name, 'team': t, 'pos': info.get('pos'), 'nfl_team': info.get('tm'),
+        'pid': info.get('pid'), 'current_status': info.get('inj'), 'expected_games_missed': 0,
+        'return_week': ovr.get('return_week'), 'note': ovr.get('note'), 'source': ovr.get('source'),
+    }
+injury_predictions = sorted(predictions.values(), key=lambda r: -r['expected_games_missed'])[:20]
+
 data = {
     'league': 'ShowMeYourTDs', 'season': 2026, 'week': nfl_week,
     'sims': meta['sims'], 'user_team': ME,
@@ -72,6 +108,7 @@ data = {
     'recaps': highlights_state.get('recaps', []),
     'weekly_awards': weekly_awards,
     'waivers': waivers,
+    'injury_predictions': injury_predictions,
 }
 
 os.makedirs('site', exist_ok=True)
