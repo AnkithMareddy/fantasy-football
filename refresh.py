@@ -13,9 +13,11 @@ def get(u):
 
 os.makedirs('state', exist_ok=True)
 
-# player map — refresh at most ~daily (Sleeper asks for no more than once a day)
+# player map (carries Sleeper's injury_status). Sleeper asks for roughly one pull a day; 3h keeps
+# injury tags reasonably live while still being ~8 pulls/day, far under their rate limit.
+PLAYERS_TTL_S = 3 * 3600
 pm = 'sleeper/players.json'
-if not os.path.exists(pm) or time.time() - os.path.getmtime(pm) > 20 * 3600:
+if not os.path.exists(pm) or time.time() - os.path.getmtime(pm) > PLAYERS_TTL_S:
     subprocess.run(['curl', '-s', '--max-time', '180', '-o', 'sleeper/players_raw.json',
                     'https://api.sleeper.app/v1/players/nfl'], check=True)
     raw = json.load(open('sleeper/players_raw.json'))
@@ -85,12 +87,17 @@ json.dump(actuals, open('state/actuals.json', 'w'), indent=1)
 # in-progress week: which starters already played, and their real points
 live_detail = {}
 played = set()
+week_teams, final_teams, live_teams = set(), set(), set()
 bench_points = {}
 if cur not in actuals and cur <= 14:
     for e in get(f'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week={cur}').get('events', []):
-        if e['competitions'][0]['status']['type']['name'] != 'STATUS_SCHEDULED':
-            for c in e['competitions'][0]['competitors']:
-                ab = c['team']['abbreviation']; played.add({'WSH': 'WAS'}.get(ab, ab))
+        status = e['competitions'][0]['status']['type']['name']
+        for c in e['competitions'][0]['competitors']:
+            ab = {'WSH': 'WAS'}.get(c['team']['abbreviation'], c['team']['abbreviation'])
+            week_teams.add(ab)
+            if status != 'STATUS_SCHEDULED':
+                played.add(ab)
+                (final_teams if status == 'STATUS_FINAL' else live_teams).add(ab)
     for m in get(f'https://api.sleeper.app/v1/league/{L}/matchups/{cur}'):
         team = rid_team.get(m['roster_id'])
         if not team: continue
@@ -99,7 +106,10 @@ if cur not in actuals and cur <= 14:
         live_detail[team] = [
             {'pid': pid, 'name': P.get(pid, {}).get('n', pid), 'pos': P.get(pid, {}).get('p'),
              'nfl': P.get(pid, {}).get('t'), 'pts': (sp[i] if i < len(sp) else 0) or 0,
-             'played': P.get(pid, {}).get('t') in played, 'slot': i}
+             'played': P.get(pid, {}).get('t') in played, 'slot': i,
+             'inj': P.get(pid, {}).get('inj'),
+             'state': ('final' if P.get(pid, {}).get('t') in final_teams else 'live' if P.get(pid, {}).get('t') in live_teams
+                       else 'todo' if P.get(pid, {}).get('t') in week_teams else 'bye')}
             for i, pid in enumerate(m.get('starters') or []) if pid and pid != '0']
         # bench players' actual points this week too, so start/sit can see what a benched player scored
         pp = m.get('players_points') or {}
@@ -107,7 +117,9 @@ if cur not in actuals and cur <= 14:
             pid: round(pts or 0, 2) for pid, pts in pp.items()
             if pid not in starter_ids and P.get(pid, {}).get('t') in played}
 json.dump({'nfl_week': cur, 'live': live, 'live_detail': live_detail,
-           'bench_points': bench_points, 'played_teams': sorted(played)},
+           'bench_points': bench_points, 'played_teams': sorted(played),
+           'final_teams': sorted(final_teams), 'live_teams': sorted(live_teams),
+           'fetched_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())},
           open('state/week.json', 'w'), indent=1)
 
 print(f"NFL week {cur} | final fantasy weeks locked in: {sorted(actuals) or 'none yet'}")

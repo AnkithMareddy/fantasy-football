@@ -3,7 +3,7 @@
 Read-only: never edits state, never fetches anything — run this after update.sh.
 Run tendencies.py separately first (venv-only) if you want fresh tendency data;
 this script just reads state/tendencies.json if it exists, and skips that section if not."""
-import json, os, glob
+import json, os, glob, re, time
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 ME = 'uaintgotjuicehoeido'
@@ -41,6 +41,30 @@ odds_table = [{
 } for i, (t, v) in enumerate(standings_rows, 1)]
 
 w_idx = meta['first_sim_week'] - 1
+
+def norm(x):
+    x = (x or '').lower().replace('.', '').replace("'", '').replace('-', ' ')
+    x = re.sub(r'\b(jr|sr|ii|iii|iv)\b', '', x); return ' '.join(x.split())
+
+BAD_STATUS = {'Out', 'Doubtful', 'Questionable', 'IR', 'PUP', 'Sus', 'SUS', 'NA', 'Injured Reserve', 'Day-To-Day'}
+live_pts = (week.get('live') or {}).get(str(nfl_week)) or {}
+live_detail = week.get('live_detail') or {}
+espn_inj = {norm(i['player']): i for i in gameday.get('injuries', [])}
+
+def side(team):
+    lineup = []
+    for st in live_detail.get(team, []):
+        e = espn_inj.get(norm(st['name']))
+        status = (e or {}).get('status') or st.get('inj')
+        lineup.append({'pid': st['pid'], 'name': st['name'], 'pos': st['pos'], 'nfl': st['nfl'],
+                       'pts': round(float(st.get('pts') or 0), 2), 'state': st.get('state', 'todo'),
+                       'inj': status if status in BAD_STATUS else None,
+                       'inj_type': (e or {}).get('type')})
+    states = [l['state'] for l in lineup]
+    return {'live': live_pts.get(team), 'lineup': lineup,
+            'done': states.count('final'), 'in_play': states.count('live'), 'to_play': states.count('todo'),
+            'alerts': [l for l in lineup if l['inj']]}
+
 matchups = []
 seen = set()
 for t in sched:
@@ -51,11 +75,14 @@ for t in sched:
     a = season_out['weekly'][t][w_idx]
     b = season_out['weekly'][o][w_idx]
     matchups.append({'a': t, 'a_winpct': round(a['winpct'] * 100), 'a_pts': round(a['mean'], 1),
-                     'b': o, 'b_winpct': round(b['winpct'] * 100), 'b_pts': round(b['mean'], 1)})
+                     'b': o, 'b_winpct': round(b['winpct'] * 100), 'b_pts': round(b['mean'], 1),
+                     'a_side': side(t), 'b_side': side(o)})
 
 performers = [{'name': r['name'], 'team': r['team'], 'pts': r['fp'], 'owner': r['own']}
               for r in gameday.get('players', [])[:12]]
-injuries = gameday.get('injuries', [])[:15]
+owner_by_name = {norm(p['n']): t for t, roster in season_in['teams'].items() for p in roster}
+all_inj = [dict(i, owner=owner_by_name.get(norm(i['player']))) for i in gameday.get('injuries', [])]
+injuries = sorted(all_inj, key=lambda i: i['owner'] is None)[:20]
 
 market = {'lines': lines, 'week': nfl_week}
 
@@ -96,6 +123,9 @@ injury_predictions = sorted(predictions.values(), key=lambda r: -r['expected_gam
 data = {
     'league': 'ShowMeYourTDs', 'season': 2026, 'week': nfl_week,
     'sims': meta['sims'], 'user_team': ME,
+    'generated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+    'live_fetched_at': week.get('fetched_at'),
+    'live_games': {'final': week.get('final_teams', []), 'live': week.get('live_teams', [])},
     'generated_note': 'Regenerated from live Sleeper/ESPN/DraftKings/nflverse data each pipeline run.',
     'teams': team_display,
     'standings': odds_table,

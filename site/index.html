@@ -238,6 +238,25 @@
   }
   .matchup-row .pct { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); }
   .matchup-row .pts { font-family: var(--font-mono); font-size: 15px; font-weight: 500; }
+
+  .matchup-row .pts .proj { display: block; font-size: 10.5px; font-weight: 400; color: var(--text-faint); text-align: right; }
+  .matchup-row .pts .now { color: var(--text); }
+  .progress-line { font-family: var(--font-label); font-size: 11px; color: var(--text-faint); letter-spacing: 0.03em; padding: 0 0 4px; }
+  .progress-line .livepill { color: var(--accent); font-weight: 600; }
+  .alert-chips { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 0 6px; }
+  .alert-chip { font-family: var(--font-label); font-size: 10.5px; padding: 1px 6px; border-radius: 2px; white-space: nowrap; }
+  .alert-chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .alert-chip.warn { background: var(--accent-soft); color: var(--accent); }
+  .lineup-details { margin-top: 6px; }
+  .lineup-details summary { cursor: pointer; font-family: var(--font-label); font-size: 11px; color: var(--text-faint); letter-spacing: 0.05em; }
+  .lineup-details summary:hover { color: var(--text-dim); }
+  .lu-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12.5px; border-bottom: 1px solid var(--line); }
+  .lu-row:last-child { border-bottom: none; }
+  .lu-pos { flex: 0 0 30px; color: var(--text-faint); font-family: var(--font-label); font-size: 11px; }
+  .lu-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lu-state { flex: none; font-family: var(--font-label); font-size: 9.5px; letter-spacing: 0.05em; color: var(--text-faint); }
+  .lu-state.live { color: var(--accent); font-weight: 600; }
+  .lu-pts { flex: 0 0 44px; text-align: right; font-family: var(--font-mono); }
   .matchup-vs {
     text-align: center;
     font-family: var(--font-label);
@@ -543,9 +562,11 @@ function render(data) {
   TEAMS = data.teams || {};
   document.getElementById('m-week').textContent = data.week;
   document.getElementById('m-sims').textContent = data.sims.toLocaleString();
-  const now = new Date().toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
-  document.getElementById('m-updated').textContent = 'UPDATED ' + now.toUpperCase();
-  document.getElementById('f-updated').textContent = 'Page generated ' + now;
+  const fmt = iso => iso ? new Date(iso).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit', timeZoneName:'short'}) : '';
+  document.getElementById('m-updated').textContent = 'DATA AS OF ' + fmt(data.generated_at).toUpperCase();
+  document.getElementById('f-updated').textContent = 'Data generated ' + fmt(data.generated_at) +
+    (data.live_fetched_at ? ' · Sleeper scores/injuries pulled ' + fmt(data.live_fetched_at) : '') +
+    '. Refreshed when the pipeline runs, not continuously.';
 
   renderTicker(data);
 
@@ -570,7 +591,7 @@ function render(data) {
     </div>
 
     <section class="panel" style="margin-bottom:20px;">
-      <h2>Week ${data.week} Matchups <small>model-projected win% &amp; score</small></h2>
+      <h2>Week ${data.week} Matchups <small>live Sleeper points · projected final</small></h2>
       <div class="panel-body">
         ${matchupCards(data.matchups, data.user_team)}
       </div>
@@ -815,6 +836,39 @@ function standingsTable(rows) {
   </table>`;
 }
 
+function sideBlock(team, side, proj, isUser, showTag) {
+  const hasLive = side && side.live !== null && side.live !== undefined;
+  const chips = (side && side.alerts || []).filter(a =>
+      ['Out','Doubtful','IR','PUP','Sus','SUS','NA','Injured Reserve'].includes(a.inj) || a.state !== 'final')
+    .map(a => `<span class="alert-chip ${['Out','IR','PUP','Sus','SUS','NA','Injured Reserve'].includes(a.inj) ? 'bad' : 'warn'}">${esc(a.name)} · ${esc(a.inj)}${a.inj_type ? ' (' + esc(a.inj_type) + ')' : ''}</span>`).join('');
+  const parts = [];
+  if (side) {
+    if (side.done) parts.push(side.done + ' done');
+    if (side.in_play) parts.push('<span class="livepill">' + side.in_play + ' live</span>');
+    if (side.to_play) parts.push(side.to_play + ' to play');
+  }
+  return `
+    <div class="matchup-row">
+      <span class="name ${isUser?'user':''}">${teamLabel(team,'sm')}${showTag}</span>
+      <span class="pts">${hasLive ? `<span class="now">${side.live.toFixed(1)}</span><span class="proj">proj ${proj}</span>` : proj}</span>
+    </div>
+    ${parts.length ? `<div class="progress-line">${parts.join(' · ')}</div>` : ''}
+    ${chips ? `<div class="alert-chips">${chips}</div>` : ''}`;
+}
+
+function lineupDetails(team, side) {
+  if (!side || !side.lineup || !side.lineup.length) return '';
+  const label = {final:'FINAL', live:'LIVE', todo:'TO PLAY', bye:'BYE'};
+  return `<details class="lineup-details"><summary>LINEUP · ${esc(teamName(team))}</summary>
+    ${side.lineup.map(l => `<div class="lu-row">
+      <span class="lu-pos">${esc(l.pos || '')}</span>
+      <span class="lu-name">${esc(l.name)}${l.inj ? ` <span class="alert-chip ${['Out','IR','PUP','Sus','SUS','NA','Injured Reserve'].includes(l.inj) ? 'bad' : 'warn'}">${esc(l.inj)}</span>` : ''}</span>
+      <span class="lu-state ${l.state}">${label[l.state] || ''}</span>
+      <span class="lu-pts">${l.pts.toFixed(1)}</span>
+    </div>`).join('')}
+  </details>`;
+}
+
 function matchupCards(matchups, userTeam) {
   if (!matchups || !matchups.length) return '<div class="empty-note">No matchups posted yet.</div>';
   return `<div class="matchups">
@@ -822,18 +876,15 @@ function matchupCards(matchups, userTeam) {
       const aUser = m.a === userTeam, bUser = m.b === userTeam;
       const aWinner = m.a_winpct >= m.b_winpct;
       const tie = m.a_winpct === m.b_winpct;
+      const aTag = aWinner && !tie ? '<span class="proj-tag">PROJ. WIN</span>' : '';
+      const bTag = !aWinner && !tie ? '<span class="proj-tag">PROJ. WIN</span>' : '';
       return `<div class="matchup">
-        <div class="matchup-row">
-          <span class="name ${aUser?'user':''}">${teamLabel(m.a,'sm')}${aWinner && !tie ? '<span class="proj-tag">PROJ. WIN</span>' : ''}</span>
-          <span class="pts">${m.a_pts}</span>
-        </div>
+        ${sideBlock(m.a, m.a_side, m.a_pts, aUser, aTag)}
         <div class="matchup-row"><span class="pct">${m.a_winpct}% win</span><span class="pct">${m.b_winpct}% win</span></div>
         <div class="win-bar"><span style="width:${m.a_winpct}%"></span></div>
         <div class="matchup-vs">VS</div>
-        <div class="matchup-row">
-          <span class="name ${bUser?'user':''}">${teamLabel(m.b,'sm')}${!aWinner && !tie ? '<span class="proj-tag">PROJ. WIN</span>' : ''}</span>
-          <span class="pts">${m.b_pts}</span>
-        </div>
+        ${sideBlock(m.b, m.b_side, m.b_pts, bUser, bTag)}
+        ${lineupDetails(m.a, m.a_side)}${lineupDetails(m.b, m.b_side)}
       </div>`;
     }).join('')}
   </div>`;
