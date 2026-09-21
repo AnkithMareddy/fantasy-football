@@ -1,6 +1,9 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-09-20 (2) - collapsible long lists on the site
+- Waiver Wire (8 shown), Injury Report (6), Injury Predictions (6), Top Performers (6), Team Tendencies (top 10 by offensive EPA) and per-team Highlights (6) now show the first few rows with a "Show N more" toggle. Display only; no data or projection changes.
+
 ## 2026-09-20 - live Sleeper points and injuries on the matchup cards
 - Matchup cards now show Sleeper's current live points (projected final underneath), how many of each team's starters are done / live / still to play (from ESPN game status), and injury chips for starters (Sleeper injury_status, plus ESPN game-report injuries). Each card has a per-team lineup drop-down with every starter's points and game state.
 - refresh.py now records per-starter game state, injury status, and a fetch timestamp in state/week.json. Sleeper's player file (the source of injury_status) is now re-pulled every 3 hours instead of every 20 (still far below Sleeper's rate limit, but more than their once-a-day guidance).

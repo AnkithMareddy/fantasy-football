@@ -314,6 +314,14 @@
   .faab-bar-fill { height: 100%; background: var(--good); border-radius: 2px; }
   .faab-val { flex: 0 0 46px; text-align: right; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-dim); }
 
+
+  .highlight-grid .collapsible { display: contents; }
+  .highlight-grid .more-btn { grid-column: 1 / -1; }
+  .collapsible:not(.open) [data-extra] { display: none; }
+  .more-btn { display: block; width: 100%; margin-top: 8px; padding: 7px 10px; background: var(--surface-2); color: var(--text-dim);
+    border: 1px solid var(--line-strong); font-family: var(--font-label); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+  .more-btn:hover { color: var(--text); border-color: var(--accent); }
+  .more-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .injpred-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
   .injpred-row:last-child { border-bottom: none; }
   .injpred-top { display: flex; align-items: center; gap: 10px; }
@@ -663,6 +671,27 @@ function render(data) {
   initHighlights(data.highlights || [], data.user_team);
 }
 
+
+// Shows the first `limit` rows and hides the rest behind a toggle. Rows are HTML strings whose first
+// tag (a <div> or <tr>) gets a data-extra flag when it falls past the limit.
+function markExtra(rows, limit) {
+  return rows.map((r, i) => i < limit ? r : r.replace(/^(\s*<\w+)/, '$1 data-extra="1"'));
+}
+function moreButton(hidden, noun) {
+  return `<button type="button" class="more-btn" aria-expanded="false">Show ${hidden} more ${esc(noun)}</button>`;
+}
+function collapsible(rows, limit, noun) {
+  if (rows.length <= limit) return rows.join('');
+  const hidden = rows.length - limit;
+  return `<div class="collapsible" data-noun="${esc(noun)}" data-hidden="${hidden}">${markExtra(rows, limit).join('')}${moreButton(hidden, noun)}</div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.more-btn'); if (!b) return;
+  const box = b.closest('.collapsible'); const open = box.classList.toggle('open');
+  b.setAttribute('aria-expanded', open);
+  b.textContent = open ? 'Show fewer' : `Show ${box.dataset.hidden} more ${box.dataset.noun}`;
+});
+
 function headshot(pid, pos) {
   if (pos === 'DEF') {
     return `<div class="headshot def">${esc(pid)}</div>`;
@@ -777,7 +806,7 @@ function initHighlights(highlights, userTeam) {
       `<button class="filter-btn ${active===o?'active':''}" data-f="${esc(o)}">${teamLabel(o,'sm')}</button>`
     ).join('');
     const shown = highlights.filter(h => (h.owners||[]).includes(active));
-    grid.innerHTML = shown.length ? shown.map(highlightCard).join('') :
+    grid.innerHTML = shown.length ? collapsible(shown.map(highlightCard), 6, 'clips') :
       '<div class="empty-note">No highlights tagged to this team yet.</div>';
     filters.querySelectorAll('.filter-btn').forEach(b => {
       b.addEventListener('click', () => { active = b.dataset.f; draw(); });
@@ -893,21 +922,22 @@ function matchupCards(matchups, userTeam) {
 function tendenciesTable(t) {
   if (!t || !t.teams || !t.teams.length) return '<div class="empty-note">Run tendencies.py to populate this.</div>';
   const rows = [...t.teams].sort((a,b) => b.epa_per_play_off - a.epa_per_play_off);
-  return `<table>
+  const LIMIT = 10, hidden = Math.max(0, rows.length - LIMIT);
+  return `<div class="collapsible" data-noun="teams" data-hidden="${hidden}"><table>
     <thead><tr>
       <th>Team</th><th>EPA/play (off)</th><th>EPA/play (def)</th><th>Pass rate</th><th>xPass +/-</th><th>Shotgun</th>
     </tr></thead>
     <tbody>
-      ${rows.map(r => `<tr>
+      ${markExtra(rows.map(r => `<tr>
         <td>${esc(r.team)}</td>
         <td class="num">${r.epa_per_play_off.toFixed(2)}</td>
         <td class="num">${(r.epa_per_play_def||0).toFixed(2)}</td>
         <td class="num">${pct(r.pass_rate*100)}</td>
         <td class="num">${r.xpass_residual!==null ? (r.xpass_residual>0?'+':'')+(r.xpass_residual*100).toFixed(0)+'%' : '—'}</td>
         <td class="num">${pct(r.shotgun_rate*100)}</td>
-      </tr>`).join('')}
+      </tr>`), LIMIT).join('')}
     </tbody>
-  </table>`;
+  </table>${hidden ? moreButton(hidden, 'teams') : ''}</div>`;
 }
 
 function marketList(market) {
@@ -944,30 +974,30 @@ function kickoffLabel(iso) {
 
 function performersList(list) {
   if (!list || !list.length) return '<div class="empty-note">No games played yet this week.</div>';
-  return list.map(p => `<div class="list-row">
+  return collapsible(list.map(p => `<div class="list-row">
     <div class="left">
       <div class="primary">${esc(p.name)} <span class="secondary">${esc(p.team)}</span></div>
       <div class="secondary" style="display:flex;align-items:center;gap:5px;">${p.owner ? teamLabel(p.owner,'sm') : 'free agent'}</div>
     </div>
     <div class="val">${p.pts.toFixed(1)}</div>
-  </div>`).join('');
+  </div>`), 6, 'players');
 }
 
 function injuriesList(list) {
   if (!list || !list.length) return '<div class="empty-note">No injuries reported this week.</div>';
-  return list.map(i => `<div class="list-row">
+  return collapsible(list.map(i => `<div class="list-row">
     <div class="left">
       <div class="primary">${esc(i.player)} <span class="secondary">${esc(i.team)}</span></div>
       <div class="secondary">${esc(i.type || '')}${i.owner ? ' · ' + esc(teamName(i.owner)) : ''}</div>
     </div>
     <span class="pill ${i.status === 'Out' || i.status === 'Doubtful' ? 'bad' : 'info'}">${esc(i.status || '')}</span>
-  </div>`).join('');
+  </div>`), 6, 'injuries');
 }
 
 function injuryPredictionsList(list) {
   if (!list || !list.length) return '<div class="empty-note">No meaningful injury risk projected right now.</div>';
   const maxG = Math.max(...list.map(r => r.expected_games_missed), 1);
-  return list.map(r => {
+  return collapsible(list.map(r => {
     const researched = !!(r.return_week || r.note);
     const statusPill = r.current_status ? `<span class="pill ${['Out','Doubtful','IR','PUP','NA','SUS'].includes(r.current_status) ? 'bad' : 'info'}">${esc(r.current_status)}</span>` : '';
     const returnPill = r.return_week ? `<span class="pill good">BACK WK ${r.return_week}</span>` : (researched ? '' : '<span class="pill info">MODEL EST.</span>');
@@ -984,13 +1014,13 @@ function injuryPredictionsList(list) {
       </div>
       ${r.note ? `<div class="injpred-note">${esc(r.note)}${r.source ? ' — <span style="opacity:.75">' + esc(r.source) + '</span>' : ''}</div>` : ''}
     </div>`;
-  }).join('');
+  }), 6, 'players');
 }
 
 function waiverMoves(w) {
   const moves = (w && w.moves) || [];
   if (!moves.length) return '<div class="empty-note">No moves cleared since the last check.</div>';
-  return moves.map(m => {
+  return collapsible(moves.map(m => {
     const add = m.added.map(p => `<span class="add">+${esc(p.name)}</span> <span class="secondary">(${esc(p.pos)})</span>`).join(', ') || '<span class="secondary">nothing</span>';
     const drop = m.dropped.map(p => `<span class="drop">-${esc(p.name)}</span> <span class="secondary">(${esc(p.pos)})</span>`).join(', ');
     const bid = m.type === 'waiver' ? `<span class="pill good">$${m.faab} FAAB</span>` : '<span class="pill info">FREE AGENT</span>';
@@ -1000,7 +1030,7 @@ function waiverMoves(w) {
       </div>
       ${bid}
     </div>`;
-  }).join('');
+  }), 8, 'moves');
 }
 
 function faabBoard(w, userTeam) {
