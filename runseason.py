@@ -4,12 +4,21 @@
 - The in-progress week uses real points for starters who already played + simulation for the rest
 - Remaining weeks are simulated with a deliberately harsh injury model
 - Known injuries use researched return weeks (state/injury_overrides.json), else a generic rule
-Writes season_out.json. SIMS env var sets the number of seasons (default 10000)."""
+Writes season_out.json (override with SEASON_OUT env var). Env vars:
+  SIMS      number of simulated seasons (default 10000)
+  CV_MULT   multiplies every position's weekly-variance coefficient (default 1.0) - a
+            sensitivity lever for "what if outcomes were more/less chaotic this season"
+  HAZ_MULT  multiplies every player's per-game injury hazard (default 1.0) - a sensitivity
+            lever for "what if the league stayed healthier/got unluckier than the baseline"
+Both multipliers default to 1.0, i.e. no effect - the normal pipeline run is unaffected."""
 import json, os, random, re, math
 from collections import defaultdict
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 N = int(os.environ.get('SIMS', '10000'))
+CV_MULT = float(os.environ.get('CV_MULT', '1.0'))
+HAZ_MULT = float(os.environ.get('HAZ_MULT', '1.0'))
+OUT = os.environ.get('SEASON_OUT', 'season_out.json')
 D = json.load(open('season_input.json')); teams = D['teams']; SCHED = D['sched']
 NAMES = list(SCHED.keys())
 
@@ -69,7 +78,7 @@ def draw(p):
     # gamma: never negative, mean preserved, right-skewed like real fantasy scoring (boom weeks)
     m = p['ppg']
     if m <= 0: return 0.0
-    cv = CV.get(p['pos'], 0.65)
+    cv = CV.get(p['pos'], 0.65) * CV_MULT
     return gamma(1.0 / (cv * cv), m * cv * cv)
 
 def lineup(avail):
@@ -128,7 +137,7 @@ for s in range(N):
                         o[i] -= 1; missed_tot[(t, p['n'])] += 1; status[i] = 0
                     elif p['bye'] == w:
                         status[i] = 0
-                    elif rand() < p['hz']:
+                    elif rand() < min(0.9, p['hz'] * HAZ_MULT):
                         o[i] = dur(); missed_tot[(t, p['n'])] += 1; status[i] = 0
                     else:
                         status[i] = 1
@@ -185,7 +194,7 @@ json.dump({'meta': {'sims': N, 'actual_weeks': sorted(ACT), 'first_sim_week': FI
            'weekly': {t: [{'mean': wk_sum[t][w] / N, 'winpct': wk_win[t][w] / N} for w in range(14)] for t in NAMES},
            'season': season,
            'games_missed': {f"{n} | {t}": g / N for (t, n), g in missed_tot.items() if g / N >= 1.0}},
-          open('season_out.json', 'w'), indent=1)
+          open(OUT, 'w'), indent=1)
 
 print(f"{N:,} seasons | real scores locked: weeks {sorted(ACT) or 'none'} | "
       f"week {FIRST_SIM} {'uses live points already scored' if LIVE else 'fully simulated'}")

@@ -41,6 +41,7 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `highlights.py` | ESPN highlight clips + recap articles, tagged to rostered players/owners — links out only, never hosts video |
 | `weekly_awards.py` | Sleeper-report-style weekly awards: best/worst team, players/benchwarmers of the week, lineup efficiency |
 | `waivers.py` | league-wide waiver/free-agent activity since the last run, every team's remaining FAAB — read-only context for waiver strategy |
+| `sensitivity.py` | re-runs the season sim twice more under different assumptions (higher weekly variance, lighter injury hazard) to show how much of the baseline playoff odds depend on those choices — never replaces or feeds back into the baseline model |
 | `build_site.py` | consolidates state into `site/data.json` for the public dashboard |
 | `site/index.html` | the public dashboard page (an unwrapped HTML fragment — see deploy_site.sh) |
 | `deploy_site.sh` | wraps site/index.html + data.json and pushes them to the public showmeyourtds repo (GitHub Pages) |

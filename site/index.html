@@ -332,6 +332,28 @@
   .injpred-games { flex: 0 0 70px; text-align: right; font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); white-space: nowrap; }
   .injpred-note { font-size: 12px; color: var(--text-faint); font-family: var(--font-label); margin-top: 5px; line-height: 1.5; }
 
+  .pod-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .pod-card { background: var(--surface-2); border: 1px solid var(--line); padding: 14px 16px; }
+  .pod-card.mine { border-color: var(--accent); }
+  .pod-story { font-size: 13px; line-height: 1.55; color: var(--text-dim); margin: 0 0 10px; }
+  .pod-story b { color: var(--text); }
+  .pod-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+  .pod-row .team-cell { flex: 1; min-width: 0; }
+  .pod-row .pod-rec { font-family: var(--font-mono); font-size: 12px; color: var(--text-faint); flex: 0 0 40px; text-align: right; }
+  .pod-row .pod-po { font-family: var(--font-mono); font-size: 12px; flex: 0 0 44px; text-align: right; }
+
+  .sens-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .sens-row:last-child { border-bottom: none; }
+  .sens-name { flex: 0 0 150px; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sens-range { flex: 1; position: relative; height: 16px; background: var(--surface-2); border-radius: 2px; }
+  .sens-range .sens-bar { position: absolute; top: 3px; bottom: 3px; background: var(--info); opacity: 0.35; border-radius: 2px; }
+  .sens-range .sens-tick { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--text); }
+  .sens-range .sens-tick.base { background: var(--accent); width: 3px; }
+  .sens-val { flex: 0 0 100px; text-align: right; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-dim); }
+  .sens-legend { display: flex; gap: 16px; font-family: var(--font-label); font-size: 11px; color: var(--text-faint); margin-bottom: 8px; flex-wrap: wrap; }
+  .sens-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .sens-legend i { width: 9px; height: 9px; display: inline-block; border-radius: 2px; }
+
   .empty-note {
     color: var(--text-faint);
     font-family: var(--font-label);
@@ -602,6 +624,20 @@ function render(data) {
       <h2>Week ${data.week} Matchups <small>${data.week_final ? 'final scores' : 'live Sleeper points · projected final'}</small></h2>
       <div class="panel-body">
         ${matchupCards(data.matchups, data.user_team, data.week_final)}
+      </div>
+    </section>
+
+    <section class="panel gold-accent" style="margin-bottom:20px;">
+      <h2>Rivalries <small>3 pods of 4 · every podmate twice a season</small></h2>
+      <div class="panel-body">
+        ${rivalriesSection(data.rivalries, data.user_team)}
+      </div>
+    </section>
+
+    <section class="panel info-accent" style="margin-bottom:20px;">
+      <h2>Model Sensitivity <small>same sim, different assumptions</small></h2>
+      <div class="panel-body">
+        ${sensitivitySection(data.sensitivity, data.user_team)}
       </div>
     </section>
 
@@ -1043,6 +1079,66 @@ function faabBoard(w, userTeam) {
     <div class="faab-bar-track"><div class="faab-bar-fill" style="width:${val}%"></div></div>
     <div class="faab-val">$${val}</div>
   </div>`).join('');
+}
+
+function weekLabel(w) { return w ? `Week ${w}` : ''; }
+
+function podStory(pod) {
+  const lead = pod.members[0];
+  const bits = [`<b>${esc(teamName(lead.team))}</b> leads this rivalry group at ${lead.pod_w}-${lead.pod_l} in-group (${pct1(lead.playoff_pct)} playoff odds overall).`];
+  if (pod.closest_game) {
+    const g = pod.closest_game;
+    bits.push(`The tightest game so far: <b>${esc(teamName(g.a))}</b> over ${esc(teamName(g.b))} by just ${g.margin.toFixed(1)} in ${weekLabel(g.week)}.`);
+  }
+  if (pod.biggest_blowout && pod.biggest_blowout !== pod.closest_game) {
+    const g = pod.biggest_blowout;
+    bits.push(`Biggest gap: <b>${esc(teamName(g.a))}</b> by ${g.margin.toFixed(1)} over ${esc(teamName(g.b))} in ${weekLabel(g.week)}.`);
+  }
+  if (pod.next_game) {
+    bits.push(`Next up: ${esc(teamName(pod.next_game.a))} vs ${esc(teamName(pod.next_game.b))} in ${weekLabel(pod.next_game.week)}.`);
+  }
+  return bits.join(' ');
+}
+
+function rivalriesSection(rivalries, userTeam) {
+  if (!rivalries || !rivalries.length) return '<div class="empty-note">Rivalry pods not available yet.</div>';
+  return `<div class="pod-grid">
+    ${rivalries.map(pod => {
+      const mine = pod.members.some(m => m.team === userTeam);
+      return `<div class="pod-card ${mine ? 'mine' : ''}">
+        <p class="pod-story">${podStory(pod)}</p>
+        ${pod.members.map(m => `<div class="pod-row">
+          <span class="team-cell">${teamLabel(m.team, 'sm')}${m.team === userTeam ? '<span class="you-flag">YOU</span>' : ''}</span>
+          <span class="pod-rec">${m.pod_w}-${m.pod_l} grp</span>
+          <span class="pod-po">${pct1(m.playoff_pct)}</span>
+        </div>`).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function sensitivitySection(sensitivity, userTeam) {
+  if (!sensitivity || !sensitivity.teams || !sensitivity.teams.length) return '<div class="empty-note">Run sensitivity.py to populate this.</div>';
+  const scenarios = sensitivity.scenarios;
+  const rows = [...sensitivity.teams].sort((a, b) => a.team === userTeam ? -1 : b.team === userTeam ? 1 : b.playoff_pct.baseline - a.playoff_pct.baseline);
+  return `
+    <div class="sens-legend">
+      ${scenarios.map(s => `<span title="${esc(s.note)}"><i style="background:${s.key === 'baseline' ? 'var(--accent)' : 'var(--info)'}"></i>${esc(s.label)}</span>`).join('')}
+    </div>
+    <div class="panel-note" style="padding:0 0 12px;border:none;margin:0;">Playoff odds under two alternate sets of assumptions, run alongside the baseline model — not a replacement for it. Bars span each team's low-to-high across all three; the orange tick marks the baseline.</div>
+    ${rows.map(r => {
+      const vals = scenarios.map(s => r.playoff_pct[s.key]);
+      const lo = Math.min(...vals), hi = Math.max(...vals), base = r.playoff_pct.baseline;
+      return `<div class="sens-row">
+        <span class="sens-name">${teamLabel(r.team, 'sm')}</span>
+        <div class="sens-range">
+          <div class="sens-bar" style="left:${lo}%; width:${Math.max(1, hi - lo)}%"></div>
+          <div class="sens-tick base" style="left:${base}%"></div>
+        </div>
+        <span class="sens-val">${lo.toFixed(0)}-${hi.toFixed(0)}% <span style="opacity:.6">(±${(r.playoff_spread/2).toFixed(1)})</span></span>
+      </div>`;
+    }).join('')}
+  `;
 }
 
 function storylines(data) {

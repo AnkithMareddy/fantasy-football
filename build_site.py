@@ -4,6 +4,7 @@ Read-only: never edits state, never fetches anything — run this after update.s
 Run tendencies.py separately first (venv-only) if you want fresh tendency data;
 this script just reads state/tendencies.json if it exists, and skips that section if not."""
 import json, os, glob, re, time
+from collections import defaultdict
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 ME = 'uaintgotjuicehoeido'
@@ -20,6 +21,8 @@ weekly_awards = json.load(open('state/weekly_awards.json')) if os.path.exists('s
 waivers = json.load(open('state/waivers.json')) if os.path.exists('state/waivers.json') else None
 injury_overrides = {k: v for k, v in json.load(open('state/injury_overrides.json')).items() if not k.startswith('_')} \
     if os.path.exists('state/injury_overrides.json') else {}
+sensitivity = json.load(open('state/sensitivity.json')) if os.path.exists('state/sensitivity.json') else None
+actuals = {int(k): v for k, v in json.load(open('state/actuals.json')).items()} if os.path.exists('state/actuals.json') else {}
 
 nfl_week = week.get('nfl_week', 1)
 gameday_files = sorted(glob.glob('state/week[0-9]*.json'),
@@ -31,14 +34,36 @@ meta = season_out['meta']
 sched = season_in['sched']
 
 standings_rows = sorted(seas.items(), key=lambda kv: (-kv[1]['po'], -kv[1]['title']))
-odds_table = [{
-    'team': t, 'rank': i,
-    'proj_w': round(v['w'], 1), 'proj_l': round(14 - v['w'], 1),
-    'playoff_pct': round(v['po'] * 100, 1), 'bye_pct': round(v['bye'] * 100, 1),
-    'title_pct': round(v['title'] * 100, 1), 'is_user': t == ME,
-    'actual_w': standings.get(t, {}).get('w', 0), 'actual_l': standings.get(t, {}).get('l', 0),
-    'pf': round(standings.get(t, {}).get('pf', 0), 1), 'faab': standings.get(t, {}).get('faab_left', 100),
-} for i, (t, v) in enumerate(standings_rows, 1)]
+
+# Sleeper's roster.settings.wins/losses/fpts (state/standings.json, via refresh.py) lags the
+# real per-week matchup results by up to a day around a week boundary - e.g. right after
+# Monday Night Football locks a week, settings can still reflect only last week's record for
+# several hours. actuals.json (this week's real matchup points) has no such lag, so the
+# actual record/points-for shown on the site are computed from it directly instead.
+def real_record(team):
+    w = l = tie = 0; pf = 0.0
+    for wk, scores in sorted(actuals.items()):
+        if team not in scores:
+            continue
+        pf += scores[team]
+        opp = sched[team][wk - 1] if wk - 1 < len(sched[team]) else None
+        if opp in scores:
+            if scores[team] > scores[opp]: w += 1
+            elif scores[team] < scores[opp]: l += 1
+            else: tie += 1
+    return w, l, pf
+
+odds_table = []
+for i, (t, v) in enumerate(standings_rows, 1):
+    w, l, pf = real_record(t)
+    odds_table.append({
+        'team': t, 'rank': i,
+        'proj_w': round(v['w'], 1), 'proj_l': round(14 - v['w'], 1),
+        'playoff_pct': round(v['po'] * 100, 1), 'bye_pct': round(v['bye'] * 100, 1),
+        'title_pct': round(v['title'] * 100, 1), 'is_user': t == ME,
+        'actual_w': w, 'actual_l': l,
+        'pf': round(pf, 1), 'faab': standings.get(t, {}).get('faab_left', 100),
+    })
 
 # Index by the week the site is actually labeled with (nfl_week), not first_sim_week -
 # once this week's results lock into actuals, first_sim_week jumps to next week, and
@@ -128,6 +153,81 @@ for name, ovr in injury_overrides.items():
     }
 injury_predictions = sorted(predictions.values(), key=lambda r: -r['expected_games_missed'])[:20]
 
+# rivalry pods: the schedule is built as three 4-team pods where every team plays every
+# podmate exactly twice (all other opponents once) - detect that structure directly from
+# the schedule rather than hardcoding it, so it stays correct if the schedule ever changes.
+# each true 2-meeting rivalry is counted from both teams' own opponent lists, so it
+# reaches 4 (2 meetings x 2 directions); a normal 1-meeting pairing only reaches 2.
+pair_count = defaultdict(int)
+for t, opps in sched.items():
+    for o in opps:
+        pair_count[frozenset((t, o))] += 1
+rival_of = defaultdict(set)
+for pair, n in pair_count.items():
+    if n >= 4 and len(pair) == 2:
+        a, b = tuple(pair)
+        rival_of[a].add(b); rival_of[b].add(a)
+
+pod_seen = set(); pods = []
+for t in sched:
+    if t in pod_seen:
+        continue
+    pod, frontier = {t}, [t]
+    while frontier:
+        x = frontier.pop()
+        for y in rival_of[x]:
+            if y not in pod:
+                pod.add(y); frontier.append(y)
+    pods.append(sorted(pod)); pod_seen |= pod
+
+def pod_record(team, podmates):
+    w = l = margins = 0
+    biggest = None
+    for wk, scores in sorted(actuals.items()):
+        opp = sched[team][wk - 1] if wk - 1 < len(sched[team]) else None
+        if opp not in podmates or team not in scores or opp not in scores:
+            continue
+        diff = scores[team] - scores[opp]
+        if diff > 0: w += 1
+        elif diff < 0: l += 1
+        if biggest is None or abs(diff) > abs(biggest[2]):
+            biggest = (team, opp, diff, wk)
+    return w, l, biggest
+
+rivalries = []
+for pod in pods:
+    members = []
+    closest, blowout = None, None
+    for t in pod:
+        w, l, big = pod_record(t, set(pod) - {t})
+        row = seas.get(t, {})
+        members.append({'team': t, 'pod_w': w, 'pod_l': l,
+                        'playoff_pct': round(row.get('po', 0) * 100, 1),
+                        'title_pct': round(row.get('title', 0) * 100, 1),
+                        'actual_w': standings.get(t, {}).get('w', 0),
+                        'actual_l': standings.get(t, {}).get('l', 0)})
+        if big:
+            a, b, diff, wk = big
+            if closest is None or abs(diff) < abs(closest[2]): closest = big
+            if blowout is None or abs(diff) > abs(blowout[2]): blowout = big
+    members.sort(key=lambda m: (-m['pod_w'], m['pod_l'], -m['playoff_pct']))
+    next_game = None
+    for wk in range(nfl_week, 15):
+        for t in pod:
+            o = sched[t][wk - 1] if wk - 1 < len(sched[t]) else None
+            if o in pod and wk not in actuals:
+                next_game = {'week': wk, 'a': t, 'b': o}; break
+        if next_game:
+            break
+    rivalries.append({
+        'members': members,
+        'leader': members[0]['team'] if members else None,
+        'closest_game': {'a': closest[0], 'b': closest[1], 'margin': round(abs(closest[2]), 1), 'week': closest[3]} if closest else None,
+        'biggest_blowout': {'a': blowout[0], 'b': blowout[1], 'margin': round(abs(blowout[2]), 1), 'week': blowout[3]} if blowout else None,
+        'next_game': next_game,
+    })
+rivalries.sort(key=lambda r: ME in [m['team'] for m in r['members']], reverse=True)
+
 data = {
     'league': 'ShowMeYourTDs', 'season': 2026, 'week': nfl_week,
     'sims': meta['sims'], 'user_team': ME,
@@ -148,6 +248,8 @@ data = {
     'weekly_awards': weekly_awards,
     'waivers': waivers,
     'injury_predictions': injury_predictions,
+    'sensitivity': sensitivity,
+    'rivalries': rivalries,
 }
 
 os.makedirs('site', exist_ok=True)
