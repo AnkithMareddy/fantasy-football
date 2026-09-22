@@ -599,9 +599,9 @@ function render(data) {
     </div>
 
     <section class="panel" style="margin-bottom:20px;">
-      <h2>Week ${data.week} Matchups <small>live Sleeper points · projected final</small></h2>
+      <h2>Week ${data.week} Matchups <small>${data.week_final ? 'final scores' : 'live Sleeper points · projected final'}</small></h2>
       <div class="panel-body">
-        ${matchupCards(data.matchups, data.user_team)}
+        ${matchupCards(data.matchups, data.user_team, data.week_final)}
       </div>
     </section>
 
@@ -898,15 +898,16 @@ function lineupDetails(team, side) {
   </details>`;
 }
 
-function matchupCards(matchups, userTeam) {
+function matchupCards(matchups, userTeam, weekFinal) {
   if (!matchups || !matchups.length) return '<div class="empty-note">No matchups posted yet.</div>';
   return `<div class="matchups">
     ${matchups.map(m => {
       const aUser = m.a === userTeam, bUser = m.b === userTeam;
       const aWinner = m.a_winpct >= m.b_winpct;
       const tie = m.a_winpct === m.b_winpct;
-      const aTag = aWinner && !tie ? '<span class="proj-tag">PROJ. WIN</span>' : '';
-      const bTag = !aWinner && !tie ? '<span class="proj-tag">PROJ. WIN</span>' : '';
+      const tagText = weekFinal ? 'WINNER' : 'PROJ. WIN';
+      const aTag = aWinner && !tie ? `<span class="proj-tag">${tagText}</span>` : '';
+      const bTag = !aWinner && !tie ? `<span class="proj-tag">${tagText}</span>` : '';
       return `<div class="matchup">
         ${sideBlock(m.a, m.a_side, m.a_pts, aUser, aTag)}
         <div class="matchup-row"><span class="pct">${m.a_winpct}% win</span><span class="pct">${m.b_winpct}% win</span></div>

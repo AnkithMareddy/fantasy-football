@@ -40,7 +40,10 @@ odds_table = [{
     'pf': round(standings.get(t, {}).get('pf', 0), 1), 'faab': standings.get(t, {}).get('faab_left', 100),
 } for i, (t, v) in enumerate(standings_rows, 1)]
 
-w_idx = meta['first_sim_week'] - 1
+# Index by the week the site is actually labeled with (nfl_week), not first_sim_week -
+# once this week's results lock into actuals, first_sim_week jumps to next week, and
+# indexing by that would silently show next week's matchups under this week's header.
+w_idx = nfl_week - 1
 
 def norm(x):
     x = (x or '').lower().replace('.', '').replace("'", '').replace('-', ' ')
@@ -52,6 +55,11 @@ live_detail = week.get('live_detail') or {}
 espn_inj = {norm(i['player']): i for i in gameday.get('injuries', [])}
 
 def side(team):
+    # only the currently in-progress week has per-starter detail (refresh.py only tracks
+    # `cur`, the week not yet locked into actuals); a completed week has none, so the card
+    # falls back to a plain final score instead of a stale or empty live overlay.
+    if not live_detail.get(team):
+        return None
     lineup = []
     for st in live_detail.get(team, []):
         e = espn_inj.get(norm(st['name']))
@@ -126,6 +134,7 @@ data = {
     'generated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
     'live_fetched_at': week.get('fetched_at'),
     'live_games': {'final': week.get('final_teams', []), 'live': week.get('live_teams', [])},
+    'week_final': nfl_week < meta['first_sim_week'],
     'generated_note': 'Regenerated from live Sleeper/ESPN/DraftKings/nflverse data each pipeline run.',
     'teams': team_display,
     'standings': odds_table,

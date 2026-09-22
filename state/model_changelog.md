@@ -1,6 +1,12 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-09-21 - week-2 lock fixes on the site
+- Found and fixed a real bug: once a week's results lock into actuals, first_sim_week jumps to the next week, but the matchups panel was still indexed off first_sim_week - so right after Monday Night Football finished, the site was showing Week 3's matchups under a "Week 2" header. Now indexed by the displayed week (nfl_week) directly.
+- Matchup cards fall back cleanly to a plain final score once a week locks (refresh.py only tracks live per-starter detail for the current in-progress week, so a completed week has none - previously this left a blank live-overlay row instead of just the score).
+- Header now reads "final scores" instead of "live Sleeper points" once the week is done, and the win tag says WINNER instead of PROJ. WIN.
+- Verified final Week 2 scores against Sleeper directly (matchups/2 endpoint) - all six games match exactly.
+
 ## 2026-09-20 (2) - collapsible long lists on the site
 - Waiver Wire (8 shown), Injury Report (6), Injury Predictions (6), Top Performers (6), Team Tendencies (top 10 by offensive EPA) and per-team Highlights (6) now show the first few rows with a "Show N more" toggle. Display only; no data or projection changes.
 
