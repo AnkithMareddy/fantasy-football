@@ -7,10 +7,16 @@
   "updated": "2026-09-10"
  },
  "A.J. Brown": {
-  "return_week": 6,
-  "note": "High-ankle sprain vs SEA, X-rays negative for fracture. Rapoport: out at least 4 weeks (next game isn't until Sept 20 vs PIT). Schultz range: 3-6 wks. Seen in walking boot postgame.",
-  "source": "Rapoport (NFL Network), Jordan Schultz",
-  "updated": "2026-09-10"
+  "return_week": 8,
+  "note": "On IR, high-ankle sprain. Week 6 (vs NYJ) was the earliest eligible date, but Rapoport (9/22): 'the expectation is he misses six weeks' - Patriots determined the injury is more serious than the initial 4-6 wk range suggested. Realistic return is Week 8 vs MIA.",
+  "source": "Rapoport (NFL Network)",
+  "updated": "2026-09-22"
+ },
+ "Jordan Mason": {
+  "return_week": 5,
+  "note": "IR, fractured thumb, had surgery. Coach O'Connell: expects him back at the 4-week IR minimum, not longer. Aaron Jones is now Minnesota's clear lead back - Mason projects as a backup/change-of-pace role even once healthy, not a lead job.",
+  "source": "ESPN, Kevin O'Connell",
+  "updated": "2026-09-22"
  },
  "TreVeyon Henderson": {
   "return_week": 3,
