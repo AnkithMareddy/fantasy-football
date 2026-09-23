@@ -1,10 +1,10 @@
 {
  "_note": "Researched return weeks for rostered players. return_week = first NFL week the player is expected to play. Maintained by the morning report run. NFL IR = minimum 4 games.",
  "Brock Bowers": {
-  "return_week": 5,
-  "note": "Meniscus trim Sept 8; placed on IR (4-game minimum). Schefter: 'a game or two' before IR move.",
-  "source": "NFL.com, NBC Sports",
-  "updated": "2026-09-10"
+  "return_week": 3,
+  "note": "Activated off IR already (roster status Active, not reserve). Practiced fully Wednesday. Kubiak: gearing up to play Sunday vs NO. Rapoport: 'expect' him to play Week 3. Not yet a final game-status tag as of Wednesday.",
+  "source": "Rapoport (NFL Network), Klint Kubiak, CBS Sports practice report",
+  "updated": "2026-09-23"
  },
  "A.J. Brown": {
   "return_week": 8,
