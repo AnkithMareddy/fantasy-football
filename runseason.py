@@ -5,12 +5,21 @@
 - Remaining weeks are simulated with a deliberately harsh injury model
 - Known injuries use researched return weeks (state/injury_overrides.json), else a generic rule
 Writes season_out.json (override with SEASON_OUT env var). Env vars:
-  SIMS      number of simulated seasons (default 10000)
-  CV_MULT   multiplies every position's weekly-variance coefficient (default 1.0) - a
-            sensitivity lever for "what if outcomes were more/less chaotic this season"
-  HAZ_MULT  multiplies every player's per-game injury hazard (default 1.0) - a sensitivity
-            lever for "what if the league stayed healthier/got unluckier than the baseline"
-Both multipliers default to 1.0, i.e. no effect - the normal pipeline run is unaffected."""
+  SIMS       number of simulated seasons (default 10000)
+  CV_MULT    multiplies every position's weekly-variance coefficient (default 1.0) - a
+             sensitivity lever for "what if outcomes were more/less chaotic this season"
+  HAZ_MULT   multiplies every player's per-game injury hazard (default 1.0) - a sensitivity
+             lever for "what if the league stayed healthier/got unluckier than the baseline"
+  MY_TEAM    team key to single out for the three levers below (default '' = none; all three
+             are no-ops until this is set, so an asymmetric "we get unlucky" run can never
+             happen by accident)
+  MY_CV_MULT      extra bust-variance multiplier applied only to MY_TEAM's players (default 1.0)
+  MY_MISTAKE_RATE probability per sim-week MY_TEAM starts a mistake lineup - the single best
+                  bench alternative at some position is deliberately benched, exactly the
+                  "started a bad player" case (default 0.0)
+  RIVAL_LUCK_MULT mean-scoring multiplier applied to every OTHER team's players once MY_TEAM
+                  is set (default 1.0) - "other teams get lucky/hot"
+All levers default to a no-op - the normal pipeline run is byte-for-byte unaffected."""
 import json, os, random, re, math
 from collections import defaultdict
 
@@ -18,6 +27,10 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 N = int(os.environ.get('SIMS', '10000'))
 CV_MULT = float(os.environ.get('CV_MULT', '1.0'))
 HAZ_MULT = float(os.environ.get('HAZ_MULT', '1.0'))
+MY_TEAM = os.environ.get('MY_TEAM', '')
+MY_CV_MULT = float(os.environ.get('MY_CV_MULT', '1.0'))
+MY_MISTAKE_RATE = float(os.environ.get('MY_MISTAKE_RATE', '0.0'))
+RIVAL_LUCK_MULT = float(os.environ.get('RIVAL_LUCK_MULT', '1.0'))
 OUT = os.environ.get('SEASON_OUT', 'season_out.json')
 IN = os.environ.get('SEASON_INPUT', 'season_input.json')
 D = json.load(open(IN)); teams = D['teams']; SCHED = D['sched']
@@ -75,12 +88,33 @@ def dur():
 
 gamma = rnd.gammavariate
 
-def draw(p):
+def draw(p, mean_mult=1.0, extra_cv_mult=1.0):
     # gamma: never negative, mean preserved, right-skewed like real fantasy scoring (boom weeks)
-    m = p['ppg']
+    m = p['ppg'] * mean_mult
     if m <= 0: return 0.0
-    cv = CV.get(p['pos'], 0.65) * CV_MULT
+    cv = CV.get(p['pos'], 0.65) * CV_MULT * extra_cv_mult
     return gamma(1.0 / (cv * cv), m * cv * cv)
+
+def draw_for(t, p):
+    # team-conditional wrapper for the MY_TEAM/RIVAL_LUCK_MULT "regression case" levers -
+    # a no-op pass-through to draw() for everyone until MY_TEAM is actually set.
+    if t == MY_TEAM:
+        return draw(p, extra_cv_mult=MY_CV_MULT)
+    if MY_TEAM:
+        return draw(p, mean_mult=RIVAL_LUCK_MULT)
+    return draw(p)
+
+def maybe_mistake(t, avail):
+    # MY_MISTAKE_RATE chance per week MY_TEAM benches its best option at some position in
+    # favor of the next-best (or worse) - "we started a bad player" as an actual mechanic,
+    # not just variance. No-op for every other team, and for MY_TEAM whenever the roll misses.
+    if t == MY_TEAM and MY_MISTAKE_RATE and rand() < MY_MISTAKE_RATE:
+        eligible = [pos for pos, lst in avail.items() if len(lst) >= 2]
+        if eligible:
+            pos = eligible[rnd.randrange(len(eligible))]
+            avail[pos].sort(key=lambda x: -x[0])
+            avail[pos][0] = (-1.0, avail[pos][0][1])
+    return avail
 
 def lineup(avail):
     # avail[pos] = [(projection, simulated points)]. Start by PROJECTION (decided before kickoff), score the draws.
@@ -115,7 +149,8 @@ def playoff_score(t):
     avail = defaultdict(list)
     for p in teams[t]:
         if rand() > 0.93: continue
-        avail[p['pos']].append((p['ppg'], draw(p)))
+        avail[p['pos']].append((p['ppg'], draw_for(t, p)))
+    avail = maybe_mistake(t, avail)
     return lineup(avail)
 
 wk_sum = {t: [0.0] * 14 for t in NAMES}; wk_win = {t: [0] * 14 for t in NAMES}
@@ -154,12 +189,13 @@ for s in range(N):
                     # managers fill the rest with their best healthy players who haven't played yet
                     avail = defaultdict(list)
                     for i, p in enumerate(R):
-                        if status[i] and p.get('tm') not in PLAYED_TEAMS: avail[p['pos']].append((p['ppg'], draw(p)))
+                        if status[i] and p.get('tm') not in PLAYED_TEAMS: avail[p['pos']].append((p['ppg'], draw_for(t, p)))
                     wk[t][w - 1] = tot + fill(open_slots, avail)
                 else:
                     avail = defaultdict(list)
                     for i, p in enumerate(R):
-                        if status[i]: avail[p['pos']].append((p['ppg'], draw(p)))
+                        if status[i]: avail[p['pos']].append((p['ppg'], draw_for(t, p)))
+                    avail = maybe_mistake(t, avail)
                     wk[t][w - 1] = lineup(avail)
         for t in NAMES:
             pf[t] += wk[t][w - 1]; wk_sum[t][w - 1] += wk[t][w - 1]

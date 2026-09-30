@@ -1,20 +1,30 @@
 #!/usr/bin/env python3
-"""Runs the season sim twice more under different assumptions, to show how sensitive the
-playoff/title odds are to modeling choices rather than treating the baseline as gospel:
-  - "High Chaos"   : weekly scoring variance x1.3 (more upset-prone, boom/bust weeks)
-  - "Healthy World": injury hazard x0.4 (roughly what the league would look like if nobody
-                     else got hurt the rest of the way either - isolates how much of the
-                     baseline odds are the harsh injury model doing the work)
-Both are read-only "what if" comparisons against the just-computed baseline (season_out.json) -
-neither ever overwrites it, and nothing here feeds back into the main sim, start/sit, or any
-other projection. Writes state/sensitivity.json."""
+"""Runs the season sim three more times under different assumptions, to show how sensitive
+the playoff/title odds are to modeling choices rather than treating the baseline as gospel:
+  - "High Chaos"     : weekly scoring variance x1.3 (more upset-prone, boom/bust weeks)
+  - "Healthy World"   : injury hazard x0.4 (roughly what the league would look like if nobody
+                        else got hurt the rest of the way either - isolates how much of the
+                        baseline odds are the harsh injury model doing the work)
+  - "Regression Case" : deliberately adversarial to OUR team only, so the model can't be
+                        accused of just assuming we deserve 1st - our bust variance x1.5, a
+                        20%/week chance we start a mistake lineup (best bench option
+                        deliberately benched), and every other team's mean scoring x1.08
+                        ("they get hot"). Everyone else's odds move too in this one, since a
+                        worse version of us changes who they're actually competing against.
+All are read-only "what if" comparisons against the just-computed baseline (season_out.json) -
+none of them ever overwrite it, and nothing here feeds back into the main sim, start/sit, or
+any other projection. Writes state/sensitivity.json."""
 import json, os, subprocess, sys
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+ME = 'uaintgotjuicehoeido'
 SIMS = os.environ.get('SIMS', '10000')
 SCENARIOS = [
     ('high_chaos', 'High Chaos', {'CV_MULT': '1.3'}, 'Weekly scoring variance up 30% - a more upset-prone season.'),
     ('healthy_world', 'Healthy World', {'HAZ_MULT': '0.4'}, "Injury hazard down 60% - roughly nobody else getting hurt the rest of the way."),
+    ('regression_case', 'Regression Case',
+     {'MY_TEAM': ME, 'MY_CV_MULT': '1.5', 'MY_MISTAKE_RATE': '0.20', 'RIVAL_LUCK_MULT': '1.08'},
+     "Adversarial to us specifically: our own bust variance up 50%, a 1-in-5 weekly chance we start a mistake lineup, and every other team running 8% hot. Answers 'what if we're just unlucky and everyone else isn't.'"),
 ]
 
 baseline = json.load(open('season_out.json'))

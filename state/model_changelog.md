@@ -1,6 +1,11 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-09-29 (2) - Regression Case: an adversarial-to-us sensitivity scenario
+- runseason.py gained three more levers (MY_TEAM, MY_CV_MULT, MY_MISTAKE_RATE, RIVAL_LUCK_MULT), all no-ops until MY_TEAM is set (verified baseline still byte-identical). MY_CV_MULT adds extra bust variance to one team only; MY_MISTAKE_RATE gives that team a real weekly chance of starting a worse player than it should (the single best bench option at a random position is deliberately benched, not just variance); RIVAL_LUCK_MULT runs every other team hot.
+- sensitivity.py's 4th scenario, "Regression Case," points all three at our own team (bust x1.5, 20%/week mistake chance, opponents scoring x1.08) - directly answers "is the model just assuming we deserve 1st." It isn't: this scenario alone drops us from 73.0% to 45.4% playoff odds and from 1st to 8th of 12 - real downside the baseline doesn't show by itself, because a favorite naturally look strong in a model that assumes everyone plays their projection.
+- Read-only, same as the other two scenarios - never overwrites season_out.json or feeds back into the baseline, start/sit, or any other number.
+
 ## 2026-09-29 - what-if roster scenarios (runseason.py)
 - runseason.py now also accepts a SEASON_INPUT env var (defaults to season_input.json, so the normal pipeline run is unaffected - verified byte-identical output with no override). Lets a one-off question like "what does the rest of the season look like if I add X and drop Y" actually run the real 10,000-sim model against a modified roster copy instead of a guess, without ever touching the baseline season_out.json.
 - Used this for a real question: swapping AJ Dillon -> Ollie Gordon II and Travis Kelce -> Kalif Raymond (both free agents in this league, both surfaced as waiver targets after De'Von Achane's Week 3 ACL tear). Baseline vs what-if: playoff 73.0% -> 86.3%, bye 31.7% -> 49.9%, title 14.9% -> 24.9%. Scratch input/output files are gitignored (state/whatif_*.json) - this is a one-off analysis tool, not a standing feature.
