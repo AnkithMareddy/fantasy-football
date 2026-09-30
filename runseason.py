@@ -19,7 +19,8 @@ N = int(os.environ.get('SIMS', '10000'))
 CV_MULT = float(os.environ.get('CV_MULT', '1.0'))
 HAZ_MULT = float(os.environ.get('HAZ_MULT', '1.0'))
 OUT = os.environ.get('SEASON_OUT', 'season_out.json')
-D = json.load(open('season_input.json')); teams = D['teams']; SCHED = D['sched']
+IN = os.environ.get('SEASON_INPUT', 'season_input.json')
+D = json.load(open(IN)); teams = D['teams']; SCHED = D['sched']
 NAMES = list(SCHED.keys())
 
 def norm(x):
