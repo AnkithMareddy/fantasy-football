@@ -2,8 +2,8 @@
   "_note": "Projection multipliers (0.5-1.5) for clearly evidenced role changes only: 2+ games of usage, an official depth-chart change, or a team statement. One game is not enough. Maintained by the morning report run.",
   "Najee Harris": {
     "mult": 0.5,
-    "note": "Healthy scratch (coach's decision) Week 1, not injury - Giants went with Skattebo/Tracy/Singletary instead. Giants also added veteran Devin Singletary (free agent, unrostered) to the backfield, making it 4 deep. Floor multiplier until he's active and gets real usage.",
-    "source": "CBS Sports, Giants.com",
-    "updated": "2026-09-13"
+    "note": "Healthy scratch Wk1; active Wk2 but only 8 offensive snaps as RB3 behind Skattebo (34) and Singletary (15). Two games of minimal usage - keep floor multiplier.",
+    "source": "CBS Sports, Giants.com, NBC Sports/Yahoo (Wk2 snap counts)",
+    "updated": "2026-09-24"
   }
 }

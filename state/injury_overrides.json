@@ -1,11 +1,5 @@
 {
  "_note": "Researched return weeks for rostered players. return_week = first NFL week the player is expected to play. Maintained by the morning report run. NFL IR = minimum 4 games.",
- "Brock Bowers": {
-  "return_week": 3,
-  "note": "Activated off IR already (roster status Active, not reserve). Practiced fully Wednesday. Kubiak: gearing up to play Sunday vs NO. Rapoport: 'expect' him to play Week 3. Not yet a final game-status tag as of Wednesday.",
-  "source": "Rapoport (NFL Network), Klint Kubiak, CBS Sports practice report",
-  "updated": "2026-09-23"
- },
  "A.J. Brown": {
   "return_week": 8,
   "note": "On IR, high-ankle sprain. Week 6 (vs NYJ) was the earliest eligible date, but Rapoport (9/22): 'the expectation is he misses six weeks' - Patriots determined the injury is more serious than the initial 4-6 wk range suggested. Realistic return is Week 8 vs MIA.",
@@ -18,34 +12,58 @@
   "source": "ESPN, Kevin O'Connell",
   "updated": "2026-09-22"
  },
- "TreVeyon Henderson": {
-  "return_week": 3,
-  "note": "Ankle injury in Aug 24 practice; missed all practices and the Wk1 opener. Timeline not given.",
-  "source": "Patriots.com, Yahoo Sports",
-  "updated": "2026-09-10"
- },
  "Isiah Pacheco": {
-  "return_week": 5,
-  "note": "On IR, minimum 4 games.",
-  "source": "ESPN",
-  "updated": "2026-09-10"
+  "return_week": 14,
+  "note": "Back surgery to remove a body pressing on a nerve; 12-week recovery with a chance he's back early December (Rapoport). Replaces the old IR-minimum Week 5 estimate. Not currently rostered in this league.",
+  "source": "Ian Rapoport (NFL Network), ESPN, Pro Football Rumors",
+  "updated": "2026-09-28"
  },
  "Zach Charbonnet": {
-  "return_week": 5,
-  "note": "Reserve/PUP, unavailable first 4 games.",
-  "source": "Fantasy Nerds",
-  "updated": "2026-09-10"
+  "return_week": 6,
+  "note": "Reserve/PUP (ACL, Jan 17). Macdonald (9/23): Seattle will NOT open his practice window this week, 'closing in on a decision'. Eligible for Week 5 but needs a practice ramp first, so Week 5 is unlikely; Week 6 is the earliest realistic game. PFN analyst guesses Week 8 (opinion, not reported).",
+  "source": "Mike Macdonald via RotoWire (9/23), Pro Football Network",
+  "updated": "2026-09-28"
  },
  "Jordyn Tyson": {
-  "return_week": 5,
-  "note": "IR, minimum 4 games.",
-  "source": "news roundup",
-  "updated": "2026-09-10"
+  "return_week": 6,
+  "note": "IR (designated to return), right hamstring strain suffered ~Aug 18; NFL Network reported ~2 months out, and Saints are being cautious given his 4th hamstring injury. Week 5 is the earliest eligible date; ~8 weeks points to Week 6.",
+  "source": "NFL Network via NFL.com, 4for4",
+  "updated": "2026-09-28"
  },
  "Josh Jacobs": {
   "return_week": 12,
   "note": "Pleaded no contest Sept 10 (criminal case resolved). Remains on Commissioner's Exempt List (paid, can't play/practice); NFL confirms no timetable for discipline. Standard domestic-violence-case suspension is 6 games, could be shorter or longer.",
   "source": "NBC Sports (PFT), NFL.com",
   "updated": "2026-09-10"
+ },
+ "De'Von Achane": {
+  "return_week": 18,
+  "note": "Torn ACL in Week 3 loss to KC, confirmed by MRI Monday; placed on IR. Out for the season.",
+  "source": "Adam Schefter (ESPN), NFL.com",
+  "updated": "2026-09-28"
+ },
+ "Caleb Williams": {
+  "return_week": 6,
+  "note": "Grade 2 hamstring strain suffered Week 2 vs MIN; ruled out Week 3 (Keenum starting). Schefter/Rapoport: 3-4 week timeline, so Week 5 at the earliest (Bears call him a quick healer), Week 6 more likely.",
+  "source": "Adam Schefter & Ian Rapoport via ESPN, ChicagoBears.com",
+  "updated": "2026-09-28"
+ },
+ "Jayden Daniels": {
+  "return_week": 6,
+  "note": "Dislocated left elbow in Week 2 vs DAL. No surgery, no IR (GM Adam Peters, 9/25). Rapoport (9/27): expected back within three weeks, playing in a brace. Week 5 possible, Week 6 most likely.",
+  "source": "Ian Rapoport (NFL Network), Adam Peters, CBS Sports",
+  "updated": "2026-09-28"
+ },
+ "Travis Etienne": {
+  "return_week": 5,
+  "note": "Hamstring injury in Week 3 loss to LV. Kellen Moore (Mon): will have 'time lost', no timeline given; unclear if IR. Out for Week 4 (MNF at ATL) assumed; if he goes to IR, bump to Week 8.",
+  "source": "Kellen Moore via ESPN, NBC Sports (PFT)",
+  "updated": "2026-09-28"
+ },
+ "Christian Kirk": {
+  "return_week": 5,
+  "note": "Started season on IR/designated-to-return, calf injury from July 26 practice. Per NFL IR tracker, eligible to return Week 5. Expected to have a prominent role in SF's offense once back.",
+  "source": "NBC Sports, RotoWire, Niners Nation",
+  "updated": "2026-10-01"
  }
 }
