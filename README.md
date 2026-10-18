@@ -2,6 +2,19 @@
 
 Season model and post-slate reports for my Sleeper league: ShowMeYourTDs, 12 teams, half PPR, redraft. Sleeper league ID `1385346462094741504`, my team is `uaintgotjuicehoeido`.
 
+## How it got here
+
+It began as a draft-night assistant for one league and became a nightly
+in-season model. The short version: a scoring-rules read that made rushing
+quarterbacks and the tight-end window the whole draft strategy, then a
+post-draft rebuild that caught four real defects (frozen rosters, IR players
+counted healthy, unrealistically narrow weekly variance, lineups picked in
+hindsight), then start/sit, market data, a public dashboard, a self-audit, and
+finally four scheduled tasks that run it without being asked.
+
+Full story, with what each change did to the numbers: **[docs/EVOLUTION.md](docs/EVOLUTION.md)**.
+Earlier versions of the simulator are frozen in [`archive/prototype-sept-2026/`](archive/prototype-sept-2026).
+
 ## What it does
 
 - Pulls live rosters, standings, results, and the in-progress week from the Sleeper and ESPN public APIs.
@@ -52,6 +65,8 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `state/role_overrides.json` | evidenced role changes, maintained by the report run |
 | `state/model_changelog.md` | every model change; read before explaining an odds move |
 | `recipients.txt` | phone numbers for the text report (gitignored) |
+| `docs/EVOLUTION.md` | how the project evolved from draft tool to in-season assistant |
+| `archive/prototype-sept-2026/` | frozen earlier versions of the simulator and the draft board (not imported by anything) |
 
 ## Schedule
 
