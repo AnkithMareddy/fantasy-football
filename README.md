@@ -70,6 +70,8 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 
 ## Schedule
 
+**Consolidating:** [docs/SCHEDULED_TASK.md](docs/SCHEDULED_TASK.md) has a single task prompt that replaces all of the tasks below. Until it's set up, the four tasks below are what run.
+
 Two Claude scheduled tasks:
 
 - **Fantasy report text (ShowMeYourTDs)** — two scheduled tasks sharing the same per-manager report logic, four runs a week: Sunday 8 AM (before that day's early kickoffs — START/SIT leads, the one that actually matters for lineup decisions), then Thursday, Sunday, and Monday at 11 PM (right after each slate finishes — mostly recap, since that week's roster is already locked or played by then). Every run researches injuries and news, updates the override files, re-runs the model, lists league-wide waiver pickups and FAAB for all 12 teams, includes a start/sit call, fact-checks, then texts the user and their roommate/co-manager.
