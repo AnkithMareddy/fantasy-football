@@ -35,6 +35,33 @@ def ppg_index(path='season_input.json'):
     return idx
 
 
+def blended_ppg(season_idx, PW, KO, P):
+    """pid -> (ppg, pos), falling back to a player's own scoring history.
+
+    season_input.json only knows players on a roster TODAY, so anyone dropped since
+    comes back as 0 ppg — which silently tells the simulator they score nothing. For
+    historical weeks that's badly wrong. Where the season index has no number, use the
+    player's mean over the weeks his NFL team actually played (bye and no-game weeks
+    excluded, since averaging those in would drag everyone down).
+    """
+    tot, cnt = {}, {}
+    for w, teams in PW.items():
+        games = KO.get(str(w)) or {}
+        for row in teams.values():
+            for pid, pts in row['all_pts'].items():
+                if (P.get(str(pid), {}).get('t')) not in games:
+                    continue
+                tot[str(pid)] = tot.get(str(pid), 0.0) + pts
+                cnt[str(pid)] = cnt.get(str(pid), 0) + 1
+    out = dict(season_idx)
+    for pid, c in cnt.items():
+        have = out.get(pid, (0.0, None))
+        if not have[0]:
+            pos = have[1] or P.get(pid, {}).get('p')
+            out[pid] = (tot[pid] / c, pos)
+    return out
+
+
 def win_prob(a_locked, a_todo, b_locked, b_todo, n=20000):
     """P(team A beats team B).
 

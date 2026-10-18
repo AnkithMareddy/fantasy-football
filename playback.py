@@ -26,7 +26,7 @@ SIMS = int(os.environ.get('PLAYBACK_SIMS', '4000'))
 PW = json.load(open('state/player_weeks.json'))
 KO = json.load(open('state/kickoffs.json'))
 P = json.load(open('sleeper/players.json'))
-PPG = W.ppg_index()
+PPG = W.blended_ppg(W.ppg_index(), PW, KO, P)
 
 
 def label_for(iso):

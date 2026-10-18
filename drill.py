@@ -38,7 +38,7 @@ PW = json.load(open('state/player_weeks.json'))
 FINAL_WEEKS = set(json.load(open('state/actuals.json')))
 KO = json.load(open('state/kickoffs.json'))
 P = json.load(open('sleeper/players.json'))
-PPG = W.ppg_index()
+PPG = W.blended_ppg(W.ppg_index(), PW, KO, P)
 
 
 def grade(cost):

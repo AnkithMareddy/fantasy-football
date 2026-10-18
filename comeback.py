@@ -37,7 +37,7 @@ FINAL_WEEKS = set(json.load(open('state/actuals.json')))
 KO = json.load(open('state/kickoffs.json'))
 PB = json.load(open('state/playback.json'))
 P = json.load(open('sleeper/players.json'))
-PPG = W.ppg_index()
+PPG = W.blended_ppg(W.ppg_index(), PW, KO, P)
 try:
     TD = json.load(open('sleeper/team_display.json'))
 except FileNotFoundError:
@@ -129,8 +129,8 @@ def build(week, m):
                 'new_total': new_total, 'flips': new_total > wn_tot,
                 'wp': round(wp, 4),
             })
-    if not swaps:
-        return None
+    if len(swaps) < 3:
+        return None          # one or two options isn't a decision, it's a reveal
     swaps.sort(key=lambda x: (-x['new_total'], -x['wp']))
     base_wp = W.win_prob(lo_locked, lo_todo, wn_locked, wn_todo, N)
     return {
