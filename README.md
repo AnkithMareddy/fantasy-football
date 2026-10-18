@@ -66,6 +66,8 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `site/arcade.html` | the arcade page: REPLAY, THE DRILL, COMEBACK (standalone, reads `arcade.json`) |
 | `dailygames.py` | daily puzzle pool — guess the player, the game, the manager — written to `site/puzzles.json` |
 | `site/daily.html` | the daily puzzle page (standalone, reads `puzzles.json`) |
+| `build_game.py` | exports each manager's squad + per-position ratings to `site/teams.json` for the playable game |
+| `site/gridiron.html` | Gridiron — original play-calling football game using the league's real rosters |
 | `deploy_site.sh` | wraps site/index.html + data.json and pushes them to the public fantasy-football-hub repo (GitHub Pages) |
 | `sleeper/team_display.json` | current Sleeper team name + avatar per team, cosmetic only (the model's internal team key never changes) |
 | `state/scouting_notes.md` | durable team/coach patterns noticed across weeks, maintained by the report run |

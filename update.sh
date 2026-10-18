@@ -33,8 +33,9 @@ if python3 history.py      > state/latest_history.txt \
    && python3 drill.py     > state/latest_drills.txt \
    && python3 comeback.py  > state/latest_comebacks.txt \
    && python3 build_arcade.py > state/latest_arcade.txt \
-   && python3 dailygames.py   > state/latest_puzzles.txt; then
-  cat state/latest_arcade.txt state/latest_puzzles.txt
+   && python3 dailygames.py   > state/latest_puzzles.txt \
+   && python3 build_game.py   > state/latest_game.txt; then
+  cat state/latest_arcade.txt state/latest_puzzles.txt state/latest_game.txt
 else
   echo "arcade regeneration failed — previous site/arcade.json left in place"
 fi

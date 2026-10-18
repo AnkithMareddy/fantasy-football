@@ -43,9 +43,11 @@ cp site/arcade.html "$DEPLOY_DIR/arcade.html"
 cp site/arcade.json "$DEPLOY_DIR/arcade.json"
 cp site/daily.html "$DEPLOY_DIR/daily.html"
 cp site/puzzles.json "$DEPLOY_DIR/puzzles.json"
+cp site/gridiron.html "$DEPLOY_DIR/gridiron.html"
+cp site/teams.json "$DEPLOY_DIR/teams.json"
 
 cd "$DEPLOY_DIR"
-git add index.html data.json arcade.html arcade.json daily.html puzzles.json
+git add index.html data.json arcade.html arcade.json daily.html puzzles.json gridiron.html teams.json
 if git diff --cached --quiet; then
   echo "deploy_site.sh: no changes to publish"
 else
