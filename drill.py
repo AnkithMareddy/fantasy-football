@@ -117,8 +117,15 @@ def build(week, team):
     actual = next(o for o in best['options'] if o['pid'] == best['started']['pid'])
     cost = top['wp'] - actual['wp']
     a_tot, b_tot = wk['total'], PW[str(week)][opp]['total']
+    lineup = []
+    for i, pid in enumerate(starters):
+        r = roster.get(pid)
+        lineup.append({'slot': SLOTS[i] if i < len(SLOTS) else 'FLEX',
+                       'name': (r or {}).get('name', '?'), 'pos': (r or {}).get('pos'),
+                       'nfl': (r or {}).get('nfl'), 'contested': i == best['slot_idx']})
     return {
         'week': int(week), 'team': team, 'opp': opp, 'slot': best['slot'],
+        'lineup': lineup,
         'slot_idx': best['slot_idx'], 'spread': round(best['spread'], 4),
         'actual_pid': actual['pid'], 'actual_name': actual['name'],
         'actual_wp': round(actual['wp'], 4),

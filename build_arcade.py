@@ -5,6 +5,7 @@ Kept separate from build_site.py on purpose: site/data.json is already large and
 front page doesn't need any of this. Writes site/arcade.json.
 """
 import json, os
+from nflcolors import TEAM_COLORS
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -33,9 +34,29 @@ for w, matchups in PB.items():
 drills = {w: [{**d, 'team_name': disp(d['team']), 'opp_name': disp(d['opp'])}
               for d in rows] for w, rows in DR.items()}
 
+# team colours ride along so the page can draw jersey tokens without its own lookup table
+def tint(rows):
+    for r in rows or []:
+        c = TEAM_COLORS.get(r.get('nfl') or '')
+        if c:
+            r['colors'] = list(c)
+    return rows
+
+
+for rows in drills.values():
+    for d in rows:
+        tint(d.get('lineup')); tint(d.get('options'))
+
 # only ship spots a player can actually win — an unwinnable comeback isn't a game
 comebacks = {w: [c for c in rows if c.get('winnable')] for w, rows in CB.items()}
 comebacks = {w: v for w, v in comebacks.items() if v}
+for rows in comebacks.values():
+    for c in rows:
+        tint(c.get('lineup')); tint(c.get('held'))
+        for sw in c.get('swaps') or []:
+            col = TEAM_COLORS.get(sw.get('in_nfl') or '')
+            if col:
+                sw['colors'] = list(col)
 
 out = {'weeks': weeks, 'drills': drills, 'comebacks': comebacks,
        'built': __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}

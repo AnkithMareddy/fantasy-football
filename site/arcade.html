@@ -68,6 +68,8 @@
   .wpbar > span { position: absolute; inset: 0; display: flex; align-items: center;
                   justify-content: center; font-family: var(--font-display); font-size: 10px;
                   text-shadow: 1px 1px 0 #000; }
+  svg.field { display: block; width: 100%; height: auto; margin-bottom: 10px;
+              border: var(--pix) solid var(--line-strong); }
   svg { display: block; width: 100%; height: auto; border: var(--pix) solid var(--line-strong);
         background: var(--surface-2); }
   .log { margin-top: 10px; max-height: 260px; overflow-y: auto; }
@@ -330,7 +332,8 @@
       d.slot + "</b> slot is the call that swung this matchup most (" +
       (d.spread * 100).toFixed(0) + "pp between the best and worst option).</div>" +
       '<div class="muted" style="margin-top:6px">Pick who you start. Projections are season averages &mdash; ' +
-      "no hindsight, same information the manager had.</div>";
+      "no hindsight, same information the manager had.</div>" +
+      (d.lineup ? field(d.lineup, "drill") : "");
     var html = "";
     (d.options || []).forEach(function (o, i) {
       html += '<button class="opt" data-i="' + i + '"><b>' + esc(o.name) + "</b>" +
@@ -393,6 +396,64 @@
       "STREAK &nbsp;" + t.streak + " &nbsp;(best " + t.best + ")";
   }
 
+  /* ---------- the field ---------- */
+  // Fantasy slots aren't a real formation, but laying them out like an offense reads
+  // instantly: receivers wide, backs behind the QB, kicker and defense off to the side.
+  var SPOTS = {
+    "WR1": [70, 58], "WR2": [530, 58], "TE": [410, 58], "FLEX": [180, 58],
+    "QB": [300, 108], "RB1": [245, 152], "RB2": [355, 152],
+    "K": [70, 176], "DEF": [530, 176]
+  };
+
+  function slotKeys(lineup) {
+    var seen = {};
+    return lineup.map(function (p) {
+      var s = p.slot;
+      if (s === "WR" || s === "RB") { seen[s] = (seen[s] || 0) + 1; return s + seen[s]; }
+      return s;
+    });
+  }
+
+  function token(x, y, p, opts) {
+    opts = opts || {};
+    var c = p.colors || ["#2C7A3F", "#9FD39F"];
+    var last = (p.name || "?").split(" ").slice(-1)[0];
+    var ring = opts.contested ? "var(--gold)" : (opts.dim ? "#3A4A3E" : c[1]);
+    var fill = opts.dim ? "#1B2A1F" : c[0];
+    var g = '<g opacity="' + (opts.dim ? 0.45 : 1) + '">';
+    g += '<circle cx="' + x + '" cy="' + y + '" r="17" fill="' + fill + '" stroke="' + ring +
+         '" stroke-width="' + (opts.contested ? 4 : 2) + '"/>';
+    g += '<text x="' + x + '" y="' + (y + 4) + '" text-anchor="middle" font-family="monospace" ' +
+         'font-size="10" font-weight="bold" fill="#F4F6E8">' +
+         esc(opts.contested ? "?" : (p.pos || "")) + "</text>";
+    g += '<text x="' + x + '" y="' + (y + 31) + '" text-anchor="middle" ' +
+         'font-family="monospace" font-size="10" fill="var(--text-dim)">' +
+         esc(opts.contested ? p.slot : last.slice(0, 10)) + "</text>";
+    g += "</g>";
+    return g;
+  }
+
+  function field(lineup, mode) {
+    var W = 600, H = 212;
+    var g = '<rect width="' + W + '" height="' + H + '" fill="#0B2112"/>';
+    for (var yl = 26; yl < H; yl += 46) {                 // yard lines
+      g += '<line x1="0" y1="' + yl + '" x2="' + W + '" y2="' + yl +
+           '" stroke="rgba(244,246,232,0.10)" stroke-width="2"/>';
+    }
+    g += '<line x1="0" y1="84" x2="' + W + '" y2="84" stroke="var(--accent)" ' +
+         'stroke-width="2" stroke-dasharray="8 6" opacity=".6"/>';
+    var keys = slotKeys(lineup);
+    lineup.forEach(function (p, i) {
+      var at = SPOTS[keys[i]] || [300, 130];
+      g += token(at[0], at[1], p, {
+        contested: mode === "drill" && p.contested,
+        dim: mode === "comeback" && p.locked
+      });
+    });
+    return '<svg class="field" viewBox="0 0 ' + W + " " + H + '" role="img" ' +
+      'aria-label="Starting lineup on the field">' + g + "</svg>";
+  }
+
   /* ---------- COMEBACK ---------- */
   var cbQueue = [], cbi = 0, cbAnswered = false, cbShown = [];
 
@@ -430,7 +491,9 @@
       (c.base_wp * 100).toFixed(1) + "%. It finished " + c.final_for.toFixed(2) + " – " +
       c.final_against.toFixed(2) + ". One swap is all you get.</div>";
 
-    $("cb-held").innerHTML = '<div class="lbl">STILL TO PLAY</div><table><tr><th>SLOT</th>' +
+    $("cb-held").innerHTML = (c.lineup ? field(c.lineup, "comeback") : "") +
+      '<div class="muted" style="font-size:16px;margin-bottom:6px">Dimmed players have already played and are locked.</div>' +
+      '<div class="lbl">STILL TO PLAY</div><table><tr><th>SLOT</th>' +
       "<th>PLAYER</th><th>PROJ</th></tr>" +
       c.held.map(function (h) {
         return "<tr><td>" + h.slot + "</td><td>" + esc(h.name) +

@@ -144,6 +144,8 @@ def build(week, m):
         'base_wp': round(base_wp, 4),
         'held': [{'name': s['name'], 'pos': s['pos'], 'nfl': s['nfl'], 'ppg': s['ppg'],
                   'slot': s['slot'], 'pts': s['pts']} for s in open_starters],
+        'lineup': [{'slot': s['slot'], 'name': s['name'], 'pos': s['pos'], 'nfl': s['nfl'],
+                    'ppg': s['ppg'], 'locked': s['kick'] not in open_isos} for s in starters],
         'opp_left': len(wn_todo),
         'swaps': swaps,
         'winnable': any(s['flips'] for s in swaps),
