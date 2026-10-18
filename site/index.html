@@ -5,6 +5,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
+  /* arcade entry point in the scoreboard header — reads as a cabinet button */
+  .arcade-link {
+    color: #0B0B0B; background: var(--accent); border: 2px solid var(--gold);
+    padding: 3px 8px; text-decoration: none; box-shadow: 2px 2px 0 rgba(0,0,0,.7);
+    display: inline-block;
+  }
+  .arcade-link:hover { background: var(--gold); }
+
   :root {
     /* 8-bit Madden: night turf, chalk lines, arcade amber */
     --bg: #07140C;
@@ -700,6 +708,7 @@
       <span>WEEK <strong id="m-week">—</strong></span>
       <span><strong id="m-sims">—</strong> SEASON SIMS</span>
       <span id="m-updated"></span>
+      <span><a class="arcade-link" href="arcade.html">&#9654; ARCADE</a></span>
     </div>
   </div>
 </header>

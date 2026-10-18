@@ -1,6 +1,13 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-10-18 - Questionable/Doubtful are now probabilities, not verdicts (runseason.py)
+- Found a real gap: a player tagged QUESTIONABLE was modelled as fully healthy. The tag was never read at all - only IR/PUP/SUS/NA/COV (out 4 weeks) and OUT/DOUBTFUL (out 1 week, deterministic) were. That silently treated 17 currently-tagged players league-wide as 100% available.
+- Game-status tags now resolve as a fresh coin flip each simulated season: DOUBTFUL misses 93% of the time, QUESTIONABLE 30%. Rates come from final-injury-report studies - Footballguys' "Chance to Play" work puts Questionable at 70.7% playing and Doubtful at 6.9%; ESPN found roughly 75% for Questionable after the 2016 definition change. OUT and IR are unchanged and still deterministic.
+- Measured, not assumed: re-ran 4,000 sims before and after against the same seed. Direction is right - Ulyssesbo (3 tagged players) -1.8pp playoff odds, Gujju8 (1) -0.9pp, arabdhab (0 tagged) +1.7pp. Per-team SE at 4k sims is ~0.8pp, so no single team's move clears noise on its own; the evidence is the pattern across teams, and the production run uses 10,000 sims.
+- NOT changed, and worth recording because an earlier read of mine was wrong: position-level injury risk already existed (season.py DEF_AVAIL feeds a per-position availability into the hazard), and injury LENGTH already came from a severity distribution (runseason.py dur(): 42% one week, 26% two, down to 4% season-ending). Neither needed fixing.
+- Still missing, deliberately: a Questionable player who does suit up often underperforms. No sourced magnitude for that, so no coefficient was invented.
+
 ## 2026-09-29 (2) - Regression Case: an adversarial-to-us sensitivity scenario
 - runseason.py gained three more levers (MY_TEAM, MY_CV_MULT, MY_MISTAKE_RATE, RIVAL_LUCK_MULT), all no-ops until MY_TEAM is set (verified baseline still byte-identical). MY_CV_MULT adds extra bust variance to one team only; MY_MISTAKE_RATE gives that team a real weekly chance of starting a worse player than it should (the single best bench option at a random position is deliberately benched, not just variance); RIVAL_LUCK_MULT runs every other team hot.
 - sensitivity.py's 4th scenario, "Regression Case," points all three at our own team (bust x1.5, 20%/week mistake chance, opponents scoring x1.08) - directly answers "is the model just assuming we deserve 1st." It isn't: this scenario alone drops us from 73.0% to 45.4% playoff odds and from 1st to 8th of 12 - real downside the baseline doesn't show by itself, because a favorite naturally look strong in a model that assumes everyone plays their projection.

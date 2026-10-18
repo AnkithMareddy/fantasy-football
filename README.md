@@ -55,8 +55,15 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `weekly_awards.py` | Sleeper-report-style weekly awards: best/worst team, players/benchwarmers of the week, lineup efficiency |
 | `waivers.py` | league-wide waiver/free-agent activity since the last run, every team's remaining FAAB — read-only context for waiver strategy |
 | `sensitivity.py` | re-runs the season sim twice more under different assumptions (higher weekly variance, lighter injury hazard) to show how much of the baseline playoff odds depend on those choices — never replaces or feeds back into the baseline model |
+| `history.py` | archives per-player weekly scoring + NFL kickoff times — Sleeper only serves these live, and `state/actuals.json` keeps team totals only |
+| `winprob.py` | win probability for one matchup with partial information; shares runseason.py's gamma draws so odds can't disagree between the two |
+| `playback.py` | scrubbable matchup replays with a win% curve, one step per kickoff window |
+| `drill.py` | the Key Decision drill: finds the slot where the call mattered most each team-week and grades every option on win chance, ex-ante |
+| `comeback.py` | Comeback spots: rewinds a lost matchup to the latest window a single legal swap could still have flipped it |
+| `build_arcade.py` | consolidates the three above into `site/arcade.json` |
 | `build_site.py` | consolidates state into `site/data.json` for the public dashboard |
 | `site/index.html` | the public dashboard page (an unwrapped HTML fragment — see deploy_site.sh) |
+| `site/arcade.html` | the arcade page: REPLAY, THE DRILL, COMEBACK (standalone, reads `arcade.json`) |
 | `deploy_site.sh` | wraps site/index.html + data.json and pushes them to the public fantasy-football-hub repo (GitHub Pages) |
 | `sleeper/team_display.json` | current Sleeper team name + avatar per team, cosmetic only (the model's internal team key never changes) |
 | `state/scouting_notes.md` | durable team/coach patterns noticed across weeks, maintained by the report run |

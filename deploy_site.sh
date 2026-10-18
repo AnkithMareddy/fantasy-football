@@ -37,9 +37,13 @@ open(f'{deploy_dir}/index.html', 'w').write(wrapped)
 PYEOF
 
 cp site/data.json "$DEPLOY_DIR/data.json"
+# arcade.html is already a complete standalone document, so unlike index.html it needs
+# no wrapping — copy it and its data straight across.
+cp site/arcade.html "$DEPLOY_DIR/arcade.html"
+cp site/arcade.json "$DEPLOY_DIR/arcade.json"
 
 cd "$DEPLOY_DIR"
-git add index.html data.json
+git add index.html data.json arcade.html arcade.json
 if git diff --cached --quiet; then
   echo "deploy_site.sh: no changes to publish"
 else

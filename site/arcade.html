@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShowMeYourTDs Arcade</title>
+<meta name="description" content="Replay every ShowMeYourTDs matchup with a live win-probability curve, and drill the lineup call that decided it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07140C; --surface: #0E2415; --surface-2: #143019;
+    --line: rgba(244,246,232,0.16); --line-strong: #2C7A3F;
+    --text: #F4F6E8; --text-dim: #9FD39F; --text-faint: #5F8F67;
+    --accent: #FFB000; --accent-soft: rgba(255,176,0,0.16); --gold: #FFD93B;
+    --good: #3DDC63; --good-soft: rgba(61,220,99,0.16);
+    --bad: #FF4B3E; --bad-soft: rgba(255,75,62,0.16);
+    --warn: #FFD93B; --orange: #FF8A3D; --info: #46B1FF;
+    --font-display: "Press Start 2P", "Courier New", monospace;
+    --font-body: "VT323", "Courier New", monospace;
+    --pix: 3px; --hard: 4px 4px 0 rgba(0,0,0,0.7);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font-body); font-size: 20px; line-height: 1.35;
+    image-rendering: pixelated;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.18) 0 1px, transparent 1px 3px);
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 20px 16px 64px; position: relative; z-index: 1; }
+  h1 { font-family: var(--font-display); font-size: 18px; line-height: 1.5; margin: 0 0 4px; color: var(--accent); }
+  .sub { color: var(--text-faint); font-size: 18px; margin-bottom: 18px; }
+  a { color: var(--info); }
+  .panel {
+    background: var(--surface); border: var(--pix) solid var(--line-strong);
+    box-shadow: var(--hard); padding: 14px; margin-bottom: 18px;
+  }
+  .lbl { font-family: var(--font-display); font-size: 10px; color: var(--text-dim); letter-spacing: .5px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  button {
+    font-family: var(--font-display); font-size: 10px; color: var(--text);
+    background: var(--surface-2); border: var(--pix) solid var(--line-strong);
+    padding: 8px 10px; cursor: pointer; border-radius: 0; box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+  }
+  button:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); }
+  button[aria-pressed="true"] { background: var(--accent); color: #0B0B0B; border-color: var(--gold); }
+  button:disabled { opacity: .45; cursor: default; }
+  .tabs { margin-bottom: 16px; }
+  .tabs button { font-size: 12px; padding: 10px 16px; }
+  .score {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    font-family: var(--font-display); font-size: 13px; margin: 10px 0;
+  }
+  .score .pts { font-size: 20px; color: var(--gold); }
+  .side { flex: 1; min-width: 0; }
+  .side.b { text-align: right; }
+  .nm { font-family: var(--font-display); font-size: 10px; color: var(--text-dim);
+        word-break: break-word; display: block; margin-bottom: 4px; }
+  .wpbar { height: 22px; border: var(--pix) solid var(--line-strong); background: var(--bad-soft);
+           position: relative; overflow: hidden; }
+  .wpbar > i {
+    display: block; height: 100%;
+    background: repeating-linear-gradient(90deg, var(--good) 0 6px, rgba(0,0,0,.25) 6px 8px);
+  }
+  .wpbar > span { position: absolute; inset: 0; display: flex; align-items: center;
+                  justify-content: center; font-family: var(--font-display); font-size: 10px;
+                  text-shadow: 1px 1px 0 #000; }
+  svg { display: block; width: 100%; height: auto; border: var(--pix) solid var(--line-strong);
+        background: var(--surface-2); }
+  .log { margin-top: 10px; max-height: 260px; overflow-y: auto; }
+  .ev { display: flex; justify-content: space-between; gap: 8px; padding: 4px 6px;
+        border-bottom: 1px solid var(--line); }
+  .ev.a { background: rgba(70,177,255,.08); }
+  .ev.b { background: rgba(255,176,0,.08); }
+  .ev .p { color: var(--gold); white-space: nowrap; }
+  .muted { color: var(--text-faint); }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { font-family: var(--font-display); font-size: 9px; color: var(--text-dim); }
+  .opt { display: block; width: 100%; text-align: left; margin-bottom: 6px; font-family: var(--font-body);
+         font-size: 19px; padding: 10px; }
+  .opt b { font-family: var(--font-display); font-size: 10px; display: block; margin-bottom: 3px; }
+  .g-green  { border-color: var(--good) !important; background: var(--good-soft) !important; }
+  .g-yellow { border-color: var(--warn) !important; background: rgba(255,217,59,.14) !important; }
+  .g-orange { border-color: var(--orange) !important; background: rgba(255,138,61,.14) !important; }
+  .g-red    { border-color: var(--bad) !important;  background: var(--bad-soft) !important; }
+  .verdict { font-family: var(--font-display); font-size: 12px; padding: 10px; margin: 10px 0;
+             border: var(--pix) solid var(--line-strong); line-height: 1.6; }
+  .tally { font-family: var(--font-display); font-size: 10px; color: var(--text-dim); line-height: 1.8; }
+  .hide { display: none !important; }
+  .note { font-size: 17px; color: var(--text-faint); border-left: var(--pix) solid var(--line-strong);
+          padding-left: 10px; margin-top: 10px; }
+  @media (max-width: 560px) {
+    body { font-size: 19px; } h1 { font-size: 14px; }
+    .score { font-size: 11px; } .score .pts { font-size: 16px; }
+  }
+</style>
+
+<div class="wrap">
+  <h1>SHOWMEYOURTDS ARCADE</h1>
+  <div class="sub">Replay any matchup with a live win% curve &mdash; then take the call yourself.
+    <a href="index.html">&larr; back to the league</a></div>
+
+  <div class="row tabs">
+    <button id="tab-replay" aria-pressed="true">&#9654; REPLAY</button>
+    <button id="tab-drill" aria-pressed="false">&#9876; THE DRILL</button>
+    <button id="tab-comeback" aria-pressed="false">&#8634; COMEBACK</button>
+  </div>
+
+  <!-- ============ REPLAY ============ -->
+  <section id="view-replay">
+    <div class="panel">
+      <div class="lbl">WEEK</div>
+      <div class="row" id="weeks"></div>
+      <div class="lbl" style="margin-top:12px">MATCHUP</div>
+      <div class="row" id="matchups"></div>
+    </div>
+
+    <div class="panel" id="replay-panel">
+      <div class="score">
+        <div class="side a"><span class="nm" id="a-name">&mdash;</span><span class="pts" id="a-pts">0.0</span></div>
+        <div class="muted" id="step-label" style="font-family:var(--font-display);font-size:10px">&mdash;</div>
+        <div class="side b"><span class="nm" id="b-name">&mdash;</span><span class="pts" id="b-pts">0.0</span></div>
+      </div>
+      <div class="wpbar"><i id="wp-fill" style="width:50%"></i><span id="wp-text">50%</span></div>
+      <div class="muted" style="font-size:16px;margin:4px 0 12px" id="wp-who">win probability</div>
+
+      <svg id="curve" viewBox="0 0 600 170" preserveAspectRatio="none" role="img"
+           aria-label="Win probability across the week"></svg>
+
+      <div class="row" style="margin-top:12px;justify-content:center">
+        <button id="first">|&lt;</button>
+        <button id="prev">&lt; PREV</button>
+        <button id="play">&#9654; PLAY</button>
+        <button id="next">NEXT &gt;</button>
+        <button id="last">&gt;|</button>
+      </div>
+      <div class="log" id="log"></div>
+      <div class="note">A step is one NFL kickoff window. Sleeper reports per-player
+        <em>week</em> totals, not per-play scoring, so a replay of a finished week advances
+        window by window &mdash; nothing here invents play-level timing it doesn't have.</div>
+    </div>
+  </section>
+
+  <!-- ============ DRILL ============ -->
+  <section id="view-drill" class="hide">
+    <div class="panel">
+      <div class="lbl">THE SPOT</div>
+      <div id="spot" style="margin-top:8px"></div>
+      <div id="options" style="margin-top:12px"></div>
+      <div id="verdict"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="next-drill">NEXT SPOT &#10140;</button>
+        <button id="reset-tally">RESET SCORE</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="lbl">YOUR CARD</div>
+      <div class="tally" id="tally" style="margin-top:8px"></div>
+      <div class="note">Every option is simulated from pregame on season averages and graded on
+        win chance, not on what happened. A right call that busted still grades green.</div>
+    </div>
+  </section>
+
+  <!-- ============ COMEBACK ============ -->
+  <section id="view-comeback" class="hide">
+    <div class="panel">
+      <div class="lbl">THE SPOT</div>
+      <div id="cb-spot" style="margin-top:8px"></div>
+      <div id="cb-held" style="margin-top:10px"></div>
+      <div class="lbl" style="margin-top:14px">MAKE ONE SWAP</div>
+      <div id="cb-options" style="margin-top:8px"></div>
+      <div id="cb-verdict"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="cb-next">NEXT SPOT &#10140;</button>
+        <button id="cb-reset">RESET RECORD</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="lbl">COMEBACK RECORD</div>
+      <div class="tally" id="cb-tally" style="margin-top:8px"></div>
+      <div class="note">Only spots that were genuinely still winnable appear here. Every
+        player listed had a game that hadn't kicked off yet, so each swap was a real,
+        legal move at that moment &mdash; not a hypothetical. Whether it flips the result is
+        computed from the actual final scores; the win% is what the call was worth at
+        the time. Those two can disagree, and both are shown.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var D = null, week = null, mi = 0, si = 0, timer = null;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function store(k, v) {
+    try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || "null");
+          localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; }
+  }
+
+  /* ---------- REPLAY ---------- */
+  function weekList() { return Object.keys(D.weeks).sort(function (a, b) { return +a - +b; }); }
+
+  function drawWeeks() {
+    $("weeks").innerHTML = "";
+    weekList().forEach(function (w) {
+      var b = document.createElement("button");
+      b.textContent = "WK " + w;
+      b.setAttribute("aria-pressed", String(w === week));
+      b.onclick = function () { week = w; mi = 0; si = 0; stop(); drawWeeks(); drawMatchups(); render(); };
+      $("weeks").appendChild(b);
+    });
+  }
+
+  function drawMatchups() {
+    var list = D.weeks[week] || [];
+    $("matchups").innerHTML = "";
+    list.forEach(function (m, i) {
+      var b = document.createElement("button");
+      b.textContent = short(m.a_name) + " v " + short(m.b_name);
+      b.setAttribute("aria-pressed", String(i === mi));
+      b.onclick = function () { mi = i; si = 0; stop(); drawMatchups(); render(); };
+      $("matchups").appendChild(b);
+    });
+  }
+
+  function short(s) { return (s || "").length > 11 ? s.slice(0, 10) + "…" : (s || "?"); }
+  function cur() { return (D.weeks[week] || [])[mi]; }
+
+  function render() {
+    var m = cur(); if (!m) return;
+    var s = m.steps[si] || m.steps[0];
+    $("a-name").textContent = m.a_name; $("b-name").textContent = m.b_name;
+    $("a-pts").textContent = s.a.toFixed(1); $("b-pts").textContent = s.b.toFixed(1);
+    $("step-label").textContent = s.label.toUpperCase() +
+      (si === m.key_step ? " ★ KEY" : "") + "  (" + si + "/" + (m.steps.length - 1) + ")";
+    var pct = Math.round(s.wp * 1000) / 10;
+    $("wp-fill").style.width = pct + "%";
+    $("wp-text").textContent = pct.toFixed(1) + "%";
+    $("wp-who").textContent = m.a_name + " to win";
+    curve(m, si);
+    var html = "";
+    m.steps.slice(1, si + 1).reverse().forEach(function (st) {
+      (st.revealed || []).forEach(function (r) {
+        html += '<div class="ev ' + r.side + '"><span>' +
+          '<span class="muted">' + st.label + '</span> ' + esc(r.name) +
+          ' <span class="muted">' + (r.pos || "") + " " + (r.nfl || "") + '</span></span>' +
+          '<span class="p">' + r.pts.toFixed(1) +
+          ' <span class="muted">(proj ' + r.ppg + ')</span></span></div>';
+      });
+    });
+    $("log").innerHTML = html || '<div class="muted" style="padding:6px">Pregame &mdash; nobody has played yet.</div>';
+    $("prev").disabled = $("first").disabled = si === 0;
+    $("next").disabled = $("last").disabled = si >= m.steps.length - 1;
+  }
+
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+
+  function curve(m, at) {
+    var W = 600, H = 170, pad = 6, n = m.steps.length;
+    var x = function (i) { return n < 2 ? W / 2 : pad + i * (W - 2 * pad) / (n - 1); };
+    var y = function (p) { return H - pad - p * (H - 2 * pad); };
+    // only draw as far as the viewer has scrubbed — plotting the whole week up front
+    // shows the ending before they've watched it
+    var pts = m.steps.slice(0, at + 1)
+      .map(function (s, i) { return x(i) + "," + y(s.wp); }).join(" ");
+    var g = '<line x1="0" y1="' + y(0.5) + '" x2="' + W + '" y2="' + y(0.5) +
+            '" stroke="var(--line)" stroke-width="2" stroke-dasharray="6 6"/>';
+    g += '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="3"/>';
+    m.steps.forEach(function (s, i) {
+      if (i > at) {   // unplayed windows: tick marks on the floor, no win% given away
+        g += '<rect x="' + (x(i) - 1) + '" y="' + (H - 5) + '" width="2" height="4" fill="var(--line-strong)"/>';
+        return;
+      }
+      var isKey = i === m.key_step, isAt = i === at;
+      g += '<circle cx="' + x(i) + '" cy="' + y(s.wp) + '" r="' + (isAt ? 7 : isKey ? 5 : 3) +
+           '" fill="' + (isAt ? "var(--gold)" : isKey ? "var(--bad)" : "var(--line-strong)") + '"/>';
+    });
+    g += '<line x1="' + x(at) + '" y1="0" x2="' + x(at) + '" y2="' + H +
+         '" stroke="var(--gold)" stroke-width="1" opacity=".5"/>';
+    $("curve").innerHTML = g;
+  }
+
+  function step(d) {
+    var m = cur(); if (!m) return;
+    si = Math.max(0, Math.min(m.steps.length - 1, si + d));
+    render();
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; $("play").textContent = "▶ PLAY"; } }
+  function play() {
+    var m = cur(); if (!m) return;
+    if (timer) return stop();
+    if (si >= m.steps.length - 1) si = 0;
+    $("play").textContent = "‖ PAUSE";
+    timer = setInterval(function () {
+      var mm = cur();
+      if (!mm || si >= mm.steps.length - 1) return stop();
+      si++; render();
+    }, 1100);
+  }
+
+  /* ---------- DRILL ---------- */
+  var queue = [], qi = 0, answered = false;
+
+  function buildQueue() {
+    queue = [];
+    Object.keys(D.drills).forEach(function (w) {
+      (D.drills[w] || []).forEach(function (d) { if ((d.options || []).length > 1) queue.push(d); });
+    });
+    for (var i = queue.length - 1; i > 0; i--) {   // shuffle so friends don't get the same order
+      var j = Math.floor(Math.random() * (i + 1)), t = queue[i]; queue[i] = queue[j]; queue[j] = t;
+    }
+    qi = 0;
+  }
+
+  function drill() { return queue[qi % queue.length]; }
+
+  function showDrill() {
+    answered = false;
+    var d = drill(); if (!d) return;
+    $("verdict").innerHTML = "";
+    $("spot").innerHTML =
+      '<div style="font-family:var(--font-display);font-size:12px;color:var(--accent);margin-bottom:6px">WEEK ' +
+      d.week + " — " + esc(d.team_name) + " vs " + esc(d.opp_name) + "</div>" +
+      "<div>You're setting <b>" + esc(d.team_name) + "</b>'s lineup before kickoff. The <b>" +
+      d.slot + "</b> slot is the call that swung this matchup most (" +
+      (d.spread * 100).toFixed(0) + "pp between the best and worst option).</div>" +
+      '<div class="muted" style="margin-top:6px">Pick who you start. Projections are season averages &mdash; ' +
+      "no hindsight, same information the manager had.</div>";
+    var html = "";
+    (d.options || []).forEach(function (o, i) {
+      html += '<button class="opt" data-i="' + i + '"><b>' + esc(o.name) + "</b>" +
+        '<span class="muted">' + (o.pos || "") + " " + (o.nfl || "") +
+        " &middot; projects " + o.ppg + " pts</span></button>";
+    });
+    $("options").innerHTML = html;
+    Array.prototype.forEach.call($("options").querySelectorAll("button"), function (b) {
+      b.onclick = function () { answer(+b.dataset.i); };
+    });
+    drawTally();
+  }
+
+  function answer(i) {
+    if (answered) return;
+    answered = true;
+    var d = drill(), picked = d.options[i], best = d.options[0];
+    var cost = best.wp - picked.wp;
+    Array.prototype.forEach.call($("options").querySelectorAll("button"), function (b) {
+      var o = d.options[+b.dataset.i];
+      b.classList.add("g-" + o.grade);
+      b.disabled = true;
+      b.innerHTML += '<span class="muted"> &rarr; ' + (o.wp * 100).toFixed(1) +
+        "% to win &middot; actually scored " + o.pts.toFixed(1) + "</span>";
+    });
+    var g = picked.grade, word = { green: "BEST CALL", yellow: "CLOSE", orange: "COSTLY", red: "BIG MISS" }[g];
+    var v = '<div class="verdict g-' + g + '">' + word + " &mdash; " +
+      (cost <= 0 ? "optimal" : "-" + (cost * 100).toFixed(1) + "pp win chance") + "<br>" +
+      "<span style=\"font-size:10px\">Best was " + esc(best.name) + " at " +
+      (best.wp * 100).toFixed(1) + "%. </span>";
+    if (picked.pid !== d.actual_pid) {
+      var act = null;
+      d.options.forEach(function (o) { if (o.pid === d.actual_pid) act = o; });
+      v += '<span style="font-size:10px">' + esc(d.team_name) + " actually started " +
+        esc(d.actual_name) + (act ? " (" + (act.wp * 100).toFixed(1) + "%, scored " +
+        act.pts.toFixed(1) + ")" : "") + ".</span>";
+    } else {
+      v += '<span style="font-size:10px">Same call the manager made.</span>';
+    }
+    v += '<br><span style="font-size:10px;color:var(--text-dim)">Final: ' +
+      d.result["for"].toFixed(1) + " &ndash; " + d.result.against.toFixed(1) + " (" +
+      (d.result.won ? "won" : "lost") + ").</span></div>";
+    $("verdict").innerHTML = v;
+
+    var t = store("smytd_drill") || { n: 0, cost: 0, green: 0, streak: 0, best: 0 };
+    t.n++; t.cost += cost;
+    if (g === "green") { t.green++; t.streak++; t.best = Math.max(t.best, t.streak); } else { t.streak = 0; }
+    store("smytd_drill", t);
+    drawTally();
+  }
+
+  function drawTally() {
+    var t = store("smytd_drill") || { n: 0, cost: 0, green: 0, streak: 0, best: 0 };
+    if (!t.n) { $("tally").innerHTML = "No spots played yet."; return; }
+    var avg = (t.cost / t.n) * 100;
+    $("tally").innerHTML =
+      "SPOTS PLAYED &nbsp;" + t.n + "<br>" +
+      "BEST CALLS &nbsp;" + t.green + " (" + Math.round(100 * t.green / t.n) + "%)<br>" +
+      "AVG WIN% GIVEN UP &nbsp;" + avg.toFixed(1) + "pp<br>" +
+      "STREAK &nbsp;" + t.streak + " &nbsp;(best " + t.best + ")";
+  }
+
+  /* ---------- COMEBACK ---------- */
+  var cbQueue = [], cbi = 0, cbAnswered = false, cbShown = [];
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function buildComebacks() {
+    cbQueue = [];
+    Object.keys(D.comebacks || {}).forEach(function (w) {
+      (D.comebacks[w] || []).forEach(function (c) { cbQueue.push(c); });
+    });
+    shuffle(cbQueue);
+    cbi = 0;
+  }
+
+  function cb() { return cbQueue[cbi % cbQueue.length]; }
+
+  function showComeback() {
+    cbAnswered = false;
+    var c = cb();
+    if (!c) { $("cb-spot").innerHTML = "No winnable spots yet this season."; return; }
+    $("cb-verdict").innerHTML = "";
+    $("cb-spot").innerHTML =
+      '<div style="font-family:var(--font-display);font-size:12px;color:var(--accent);margin-bottom:6px">WEEK ' +
+      c.week + " — " + esc(c.loser_name) + " lost to " + esc(c.winner_name) +
+      " by " + c.margin.toFixed(2) + "</div>" +
+      "<div>It's <b>" + esc(c.state_label) + "</b>. You're " + c.lo_locked.toFixed(1) +
+      " – " + c.wn_locked.toFixed(1) + " with <b>" + c.held.length +
+      "</b> still to play; they have <b>" + c.opp_left + "</b>.</div>" +
+      '<div class="muted" style="margin-top:4px">Win probability right now: ' +
+      (c.base_wp * 100).toFixed(1) + "%. It finished " + c.final_for.toFixed(2) + " – " +
+      c.final_against.toFixed(2) + ". One swap is all you get.</div>";
+
+    $("cb-held").innerHTML = '<div class="lbl">STILL TO PLAY</div><table><tr><th>SLOT</th>' +
+      "<th>PLAYER</th><th>PROJ</th></tr>" +
+      c.held.map(function (h) {
+        return "<tr><td>" + h.slot + "</td><td>" + esc(h.name) +
+          ' <span class="muted">' + (h.pos || "") + " " + (h.nfl || "") + "</span></td><td>" +
+          h.ppg + "</td></tr>";
+      }).join("") + "</table>";
+
+    // show every swap that flips it plus a sample of the rest, then SHUFFLE — the data
+    // arrives sorted best-first, which would hand over the answer
+    var flips = c.swaps.filter(function (s) { return s.flips; });
+    var rest = shuffle(c.swaps.filter(function (s) { return !s.flips; })).slice(0, 7);
+    cbShown = shuffle(flips.concat(rest));
+    $("cb-options").innerHTML = cbShown.map(function (s, i) {
+      return '<button class="opt" data-i="' + i + '"><b>START ' + esc(s["in"]) +
+        " OVER " + esc(s.out) + "</b>" +
+        '<span class="muted">' + s.slot + " &middot; " + esc(s["in"]) + " " +
+        (s.in_pos || "") + " " + (s.in_nfl || "") + " projects " + s.in_ppg +
+        "</span></button>";
+    }).join("");
+    Array.prototype.forEach.call($("cb-options").querySelectorAll("button"), function (b) {
+      b.onclick = function () { answerComeback(+b.dataset.i); };
+    });
+    drawCbTally();
+  }
+
+  function answerComeback(i) {
+    if (cbAnswered) return;
+    cbAnswered = true;
+    var c = cb(), s = cbShown[i];
+    Array.prototype.forEach.call($("cb-options").querySelectorAll("button"), function (b) {
+      var o = cbShown[+b.dataset.i];
+      b.classList.add(o.flips ? "g-green" : "g-red");
+      b.disabled = true;
+      b.innerHTML += '<span class="muted"> &rarr; ' + o.new_total.toFixed(2) + " vs " +
+        c.final_against.toFixed(2) + (o.flips ? " — WINS" : " — still short") +
+        " &middot; was worth " + (o.wp * 100).toFixed(1) + "% at the time</span>";
+    });
+    var delta = (s.wp - c.base_wp) * 100;
+    $("cb-verdict").innerHTML = '<div class="verdict g-' + (s.flips ? "green" : "red") + '">' +
+      (s.flips ? "FLIPPED IT — " + s.new_total.toFixed(2) + " to " + c.final_against.toFixed(2)
+               : "STILL LOSES — " + s.new_total.toFixed(2) + " to " + c.final_against.toFixed(2)) +
+      "<br><span style=\"font-size:10px\">" + esc(s["in"]) + " scored " + s.in_pts.toFixed(1) +
+      ", " + esc(s.out) + " scored " + s.out_pts.toFixed(1) + ". At the time the swap was worth " +
+      (s.wp * 100).toFixed(1) + "% (" + (delta >= 0 ? "+" : "") + delta.toFixed(1) +
+      "pp vs standing pat).</span></div>";
+
+    var t = store("smytd_cb") || { n: 0, flipped: 0 };
+    t.n++; if (s.flips) t.flipped++;
+    store("smytd_cb", t);
+    drawCbTally();
+  }
+
+  function drawCbTally() {
+    var t = store("smytd_cb") || { n: 0, flipped: 0 };
+    $("cb-tally").innerHTML = t.n
+      ? "SPOTS PLAYED &nbsp;" + t.n + "<br>GAMES FLIPPED &nbsp;" + t.flipped +
+        " (" + Math.round(100 * t.flipped / t.n) + "%)"
+      : "No spots played yet.";
+  }
+
+  /* ---------- tabs / boot ---------- */
+  function tab(which) {
+    ["replay", "drill", "comeback"].forEach(function (k) {
+      $("view-" + k).classList.toggle("hide", k !== which);
+      $("tab-" + k).setAttribute("aria-pressed", String(k === which));
+    });
+    if (which !== "replay") stop();
+    // queues are built at boot, so gate the first render on the panel being empty, not on
+    // the queue being empty — otherwise the tab opens blank
+    if (which === "drill" && !$("spot").innerHTML) showDrill();
+    if (which === "comeback" && !$("cb-spot").innerHTML) showComeback();
+  }
+
+  fetch("arcade.json", { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (json) {
+      D = json;
+      var ws = weekList();
+      if (!ws.length) throw new Error("no weeks");
+      week = ws[ws.length - 1];
+      drawWeeks(); drawMatchups(); render();
+      $("first").onclick = function () { stop(); si = 0; render(); };
+      $("last").onclick = function () { stop(); si = cur().steps.length - 1; render(); };
+      $("prev").onclick = function () { stop(); step(-1); };
+      $("next").onclick = function () { stop(); step(1); };
+      $("play").onclick = play;
+      $("tab-replay").onclick = function () { tab("replay"); };
+      $("tab-drill").onclick = function () { tab("drill"); };
+      $("tab-comeback").onclick = function () { tab("comeback"); };
+      $("next-drill").onclick = function () { qi++; showDrill(); };
+      $("reset-tally").onclick = function () { store("smytd_drill", { n: 0, cost: 0, green: 0, streak: 0, best: 0 }); drawTally(); };
+      $("cb-next").onclick = function () { cbi++; showComeback(); };
+      $("cb-reset").onclick = function () { store("smytd_cb", { n: 0, flipped: 0 }); drawCbTally(); };
+      document.addEventListener("keydown", function (e) {
+        if ($("view-replay").classList.contains("hide")) return;
+        if (e.key === "ArrowRight") { stop(); step(1); }
+        if (e.key === "ArrowLeft") { stop(); step(-1); }
+        if (e.key === " ") { e.preventDefault(); play(); }
+      });
+      buildQueue();
+      buildComebacks();
+    })
+    .catch(function (e) {
+      document.querySelector(".wrap").insertAdjacentHTML("beforeend",
+        '<div class="panel" style="border-color:var(--bad)">Could not load arcade.json (' +
+        e.message + "). Run <code>python3 build_arcade.py</code> and redeploy.</div>");
+    });
+})();
+</script>
+</html>

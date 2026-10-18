@@ -22,3 +22,18 @@ else
 fi
 
 python3 build_site.py
+
+# Arcade: per-player weekly history -> replays -> drills -> comeback spots. history.py
+# must run first; the other three read what it archives. This runs last and every step
+# sits inside the `if`, so under `set -e` a failure here leaves the previous arcade data
+# in place and still can't take the report or the site build down with it.
+# drill.py (~40s) and comeback.py (~35s) are the slow ones.
+if python3 history.py      > state/latest_history.txt \
+   && python3 playback.py  > state/latest_playback.txt \
+   && python3 drill.py     > state/latest_drills.txt \
+   && python3 comeback.py  > state/latest_comebacks.txt \
+   && python3 build_arcade.py > state/latest_arcade.txt; then
+  cat state/latest_arcade.txt
+else
+  echo "arcade regeneration failed — previous site/arcade.json left in place"
+fi

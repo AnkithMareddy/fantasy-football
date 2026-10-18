@@ -37,3 +37,9 @@ node_modules/
 .env
 .env.*
 state/whatif_*.json
+state/player_weeks.json
+state/kickoffs.json
+state/playback.json
+state/drills.json
+site/arcade.json
+state/comebacks.json

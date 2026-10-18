@@ -63,6 +63,13 @@ PID = {t: {p.get('pid'): i for i, p in enumerate(teams[t]) if p.get('pid')} for 
 
 # starting unavailability, in simulated weeks from FIRST_SIM
 init_out = {t: {} for t in NAMES}; applied = []
+# Game-status tags are probabilities, not verdicts, so they're drawn fresh each season
+# rather than baked in once. Rates from final-injury-report studies: Questionable plays
+# ~70.7% of the time and Doubtful ~6.9% (Footballguys 2024/2025 "Chance to Play"); ESPN
+# found ~75% for Questionable after the 2016 definition change. QUESTIONABLE used to be
+# ignored outright, which treated a hobbled starter as fully healthy.
+MISS_PROB = {'DOUBTFUL': 0.93, 'QUESTIONABLE': 0.30}
+prob_out = {t: {} for t in NAMES}
 for t in NAMES:
     for i, p in enumerate(teams[t]):
         o = OVR.get(norm(p['n']))
@@ -73,7 +80,8 @@ for t in NAMES:
             continue
         st = (p.get('inj') or '').upper()
         if p.get('ir') or st in ('IR', 'PUP', 'SUS', 'NA', 'COV'): init_out[t][i] = 4
-        elif st in ('OUT', 'DOUBTFUL'): init_out[t][i] = 1
+        elif st == 'OUT': init_out[t][i] = 1
+        elif st in MISS_PROB: prob_out[t][i] = MISS_PROB[st]
 
 rnd = random.Random(20260907); gauss = rnd.gauss; rand = rnd.random
 
@@ -160,6 +168,11 @@ missed_tot = defaultdict(float)
 
 for s in range(N):
     out = {t: dict(init_out[t]) for t in NAMES}
+    # resolve this season's Questionable/Doubtful coin flips (see MISS_PROB above)
+    for t, probs in prob_out.items():
+        for i, pr in probs.items():
+            if rand() < pr:
+                out[t][i] = max(out[t].get(i, 0), 1)
     wins = {t: 0 for t in NAMES}; pf = {t: 0.0 for t in NAMES}
     wk = {t: [0.0] * 14 for t in NAMES}
     for w in range(1, 15):
