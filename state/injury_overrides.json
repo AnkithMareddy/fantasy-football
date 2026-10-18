@@ -7,10 +7,10 @@
   "updated": "2026-09-22"
  },
  "Jordan Mason": {
-  "return_week": 5,
-  "note": "IR, fractured thumb, had surgery. Coach O'Connell: expects him back at the 4-week IR minimum, not longer. Aaron Jones is now Minnesota's clear lead back - Mason projects as a backup/change-of-pace role even once healthy, not a lead job.",
-  "source": "ESPN, Kevin O'Connell",
-  "updated": "2026-09-22"
+  "return_week": 7,
+  "note": "IR (fractured thumb, surgery), placed 9/16 so must miss Weeks 2-5; Vikings are on bye Week 6, so Week 7 is the earliest game. O'Connell expects him back at the short-term IR minimum. Aaron Jones is Minnesota's lead back - Mason projects as backup/change-of-pace once healthy.",
+  "source": "NBC Sports, NFL.com, Kevin O'Connell, Ian Rapoport",
+  "updated": "2026-10-01"
  },
  "Isiah Pacheco": {
   "return_week": 14,
@@ -19,16 +19,16 @@
   "updated": "2026-09-28"
  },
  "Zach Charbonnet": {
-  "return_week": 6,
-  "note": "Reserve/PUP (ACL, Jan 17). Macdonald (9/23): Seattle will NOT open his practice window this week, 'closing in on a decision'. Eligible for Week 5 but needs a practice ramp first, so Week 5 is unlikely; Week 6 is the earliest realistic game. PFN analyst guesses Week 8 (opinion, not reported).",
-  "source": "Mike Macdonald via RotoWire (9/23), Pro Football Network",
-  "updated": "2026-09-28"
+  "return_week": 7,
+  "note": "Reserve/PUP (ACL). Macdonald: not activated for Week 6 TNF at DEN. Must be activated by 10/22 (21-day window); Week 7 vs KC (10/25) is next.",
+  "source": "Mike Macdonald via RotoBaller/Bleacher Report",
+  "updated": "2026-10-17"
  },
  "Jordyn Tyson": {
-  "return_week": 6,
-  "note": "IR (designated to return), right hamstring strain suffered ~Aug 18; NFL Network reported ~2 months out, and Saints are being cautious given his 4th hamstring injury. Week 5 is the earliest eligible date; ~8 weeks points to Week 6.",
-  "source": "NFL Network via NFL.com, 4for4",
-  "updated": "2026-09-28"
+  "return_week": 9,
+  "note": "IR (designated to return), right hamstring strain. Schefter (10/5): making progress but won't be activated before Week 7 at the soonest; Saints bye is Week 8, so Week 9 vs CLE is the more likely debut. Moore said he would not practice this week. Week 7 remains possible.",
+  "source": "Adam Schefter (ESPN) via The Fantasy Footballers, Kellen Moore via NBC Sports",
+  "updated": "2026-10-10"
  },
  "Josh Jacobs": {
   "return_week": 12,
@@ -44,26 +44,110 @@
  },
  "Caleb Williams": {
   "return_week": 6,
-  "note": "Grade 2 hamstring strain suffered Week 2 vs MIN; ruled out Week 3 (Keenum starting). Schefter/Rapoport: 3-4 week timeline, so Week 5 at the earliest (Bears call him a quick healer), Week 6 more likely.",
-  "source": "Adam Schefter & Ian Rapoport via ESPN, ChicagoBears.com",
-  "updated": "2026-09-28"
- },
- "Jayden Daniels": {
-  "return_week": 6,
-  "note": "Dislocated left elbow in Week 2 vs DAL. No surgery, no IR (GM Adam Peters, 9/25). Rapoport (9/27): expected back within three weeks, playing in a brace. Week 5 possible, Week 6 most likely.",
-  "source": "Ian Rapoport (NFL Network), Adam Peters, CBS Sports",
-  "updated": "2026-09-28"
+  "note": "Grade 2 hamstring (Week 2). Practiced fully all of Week 6; officially questionable but expected to play at ATL. Delete once he plays.",
+  "source": "NFL.com roundup (10/15), Yahoo injury table (10/16)",
+  "updated": "2026-10-17"
  },
  "Travis Etienne": {
-  "return_week": 5,
-  "note": "Hamstring injury in Week 3 loss to LV. Kellen Moore (Mon): will have 'time lost', no timeline given; unclear if IR. Out for Week 4 (MNF at ATL) assumed; if he goes to IR, bump to Week 8.",
-  "source": "Kellen Moore via ESPN, NBC Sports (PFT)",
-  "updated": "2026-09-28"
+  "return_week": 9,
+  "note": "Placed on IR with the Week 3 hamstring injury; must miss at least four games. Earliest return is Week 9 vs CLE (Nov 8) - Saints bye is Week 8.",
+  "source": "RotoBaller, NBC Sports (PFT), Saints injury report",
+  "updated": "2026-10-09"
  },
  "Christian Kirk": {
-  "return_week": 5,
-  "note": "Started season on IR/designated-to-return, calf injury from July 26 practice. Per NFL IR tracker, eligible to return Week 5. Expected to have a prominent role in SF's offense once back.",
-  "source": "NBC Sports, RotoWire, Niners Nation",
+  "return_week": 7,
+  "note": "Still on IR (calf). Shanahan said 10/2 the 49ers could open his practice window in two weeks, so Week 5 and almost certainly Week 6 are out; Week 7 is the realistic earliest game. SF byes Week 8, so a slow ramp means Week 9.",
+  "source": "Kyle Shanahan via Matt Barrows (The Athletic), relayed by ESPN/RotoWire",
+  "updated": "2026-10-09"
+ },
+ "Breece Hall": {
+  "return_week": 7,
+  "note": "Quad. Jets Friday report lists him out for Week 6 vs NE (third straight miss). Still week-to-week, no IR.",
+  "source": "Jets Friday injury report via Yahoo/FantasyPros (10/16)",
+  "updated": "2026-10-17"
+ },
+ "Ja'Kobi Lane": {
+  "return_week": 6,
+  "note": "Short-term IR (fractured wrist, surgery) after Week 1. Eligible to return Week 6.",
+  "source": "ESPN, NBC Sports (9/16)",
   "updated": "2026-10-01"
+ },
+ "Jonah Coleman": {
+  "return_week": 7,
+  "note": "IR 9/26 with a high-ankle sprain suffered Week 2. Must miss at least 4 games; Week 7 vs ARI is the earliest return.",
+  "source": "NBC Sports/PFT, Mile High Sports",
+  "updated": "2026-10-01"
+ },
+ "Lamar Jackson": {
+  "return_week": 7,
+  "note": "Left ankle sprain (Week 4). Hasn't practiced in two weeks; Minter ruled him out Friday 10/16 for Week 6 at CLE (second straight miss). Huntley starts. Week 7 unconfirmed.",
+  "source": "Jesse Minter via Yahoo Sports/Baltimore Beatdown (10/16)",
+  "updated": "2026-10-17"
+ },
+ "Saquon Barkley": {
+  "return_week": 7,
+  "note": "Hamstring (Week 4). Missed all week of practice; officially out Week 6 vs CAR. Week 7 unconfirmed.",
+  "source": "NBC Sports Philadelphia, Yahoo injury table (10/16)",
+  "updated": "2026-10-17"
+ },
+ "DeVonta Smith": {
+  "return_week": 6,
+  "note": "Hamstring; hasn't practiced since Week 3. Ruled out Week 4 and now Week 5 vs JAX (London). No IR. Week 6 is the earliest.",
+  "source": "CBS Sports Week 5 injury report (10/9), NBC Sports Philadelphia",
+  "updated": "2026-10-10"
+ },
+ "Jadarian Price": {
+  "return_week": 8,
+  "note": "Placed on IR 10/3 after aggravating a chest injury (first hurt Week 2) in practice. Must miss at least 4 games (Weeks 4-7); Week 8 is the earliest.",
+  "source": "Seahawks via NBC Sports (PFT), FOX 13 Seattle, TSN",
+  "updated": "2026-10-10"
+ },
+ "Stefon Diggs": {
+  "return_week": 6,
+  "note": "Hamstring; did not practice all week and is officially Out for Week 5 vs NYG. No timeline reported - Week 6 is unconfirmed.",
+  "source": "Commanders.com game status, ESPN Fantasy inactives column",
+  "updated": "2026-10-11"
+ },
+ "Kyle Monangai": {
+  "return_week": 7,
+  "note": "Out Week 5 at GB (thumb/toe). Jeremy Fowler: dealing with turf toe and could miss another week or two. Week 7 is a midpoint estimate, unconfirmed. D'Andre Swift keeps the lead role.",
+  "source": "Jeremy Fowler (ESPN) via ESPN Fantasy inactives column, Sleeper status",
+  "updated": "2026-10-11"
+ },
+ "Caleb Douglas": {
+  "return_week": 7,
+  "note": "Ankle, hurt Week 2; missed Weeks 3-4, did not practice Wed/Thu of Week 5 and shown as Out on Sleeper (third straight miss). Hafley has called him day-to-day; official Week 5 designation not confirmed in what I could read. Dolphins bye is Week 6, so Week 7 is the next game - unconfirmed.",
+  "source": "Jeff Hafley via RotoBaller, Sleeper status (10/11)",
+  "updated": "2026-10-11"
+ },
+ "Marvin Harrison": {
+  "return_week": 6,
+  "note": "Not injured: held out Week 5 while a trade was finalized. Traded to Houston 10/11 (confirmed by DeMeco Ryans; Schefter/Rapoport: 2027 2nd + 6th for Harrison and a 7th). Week 6 is his first possible game as a Texan; delete this entry once he plays.",
+  "source": "DeMeco Ryans via AP, Adam Schefter (ESPN), Ian Rapoport (NFL Network)",
+  "updated": "2026-10-13"
+ },
+ "TreVeyon Henderson": {
+  "return_week": 9,
+  "note": "Right high-ankle sprain, hurt Week 5 vs LV; MRI Monday 10/12. Schefter: expected to miss multiple weeks, no surgery, not reported on IR. No firm timeline - Week 9 (three missed games) is a midpoint estimate, unconfirmed. Rhamondre Stevenson leads the backfield meanwhile.",
+  "source": "Adam Schefter (ESPN) via RotoWire, Pats Pulpit",
+  "updated": "2026-10-13"
+ },
+ "Deebo Samuel": {
+  "return_week": 9,
+  "note": "Right hamstring strain, hurt Week 5 vs SEA. Shanahan: strained it 'pretty good', will miss 'at least a couple weeks'; MRI confirmed a multi-week absence. Out Week 6 vs WAS and Week 7 at ATL; 49ers bye is Week 8, so Week 9 is the earliest realistic return.",
+  "source": "Kyle Shanahan via RotoWire, FantasyPros",
+  "updated": "2026-10-13"
+ },
+ "Jalen Hurts": {
+  "return_week": 10,
+  "note": "Superficial blood clot in calf (cleated Week 4 vs LAR). Follow-up ultrasound Wed 10/14 showed the clot moving; ruled out Week 6 vs CAR, no timetable. Tanner McKee starts. Yahoo's Week 6 tracker headline says he's going on IR (couldn't read the detail, unconfirmed); IR = Weeks 6-9 minimum, so Week 10 is the earliest if that holds.",
+  "source": "Eagles statement via ESPN/Philadelphia Inquirer (10/15); Yahoo Sports injury tracker headline (unconfirmed IR)",
+  "updated": "2026-10-17"
+ },
+ "David Montgomery": {
+  "return_week": 7,
+  "note": "Groin, left Week 5 vs TEN. DeMeco Ryans: week-to-week. Out for Week 6 vs JAX in London. Week 7 unconfirmed - one analysis calls a Week 7 miss more likely than not. Woody Marks leads the backfield.",
+  "source": "DeMeco Ryans via RotoBaller/Fantasy Footballers; RotoWire (10/15)",
+  "updated": "2026-10-17"
  }
 }
