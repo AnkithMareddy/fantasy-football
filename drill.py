@@ -28,7 +28,9 @@ import winprob as W
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 N = int(os.environ.get('DRILL_SIMS', '8000'))
 
-SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF']
+import league
+# starting slots come from the league's own settings (roster_positions)
+SLOTS = league.config()['roster_slots']
 ELIGIBLE = {'QB': {'QB'}, 'RB': {'RB'}, 'WR': {'WR'}, 'TE': {'TE'},
             'FLEX': {'RB', 'WR', 'TE'}, 'K': {'K'}, 'DEF': {'DEF'}}
 BANDS = [(0.005, 'green'), (0.02, 'yellow'), (0.05, 'orange')]
@@ -53,7 +55,10 @@ def pool(week, team):
     wk = PW[str(week)][team]
     games = KO.get(str(week)) or {}
     out = []
-    for pid in set(list(wk['all_pts']) + wk['starters']):
+    # sorted(): set iteration order follows Python's per-process string hash
+    # randomisation, which shifts the random-draw sequence and makes results
+    # differ between identical runs. Sorting pins it.
+    for pid in sorted(set(list(wk['all_pts']) + wk['starters'])):
         p = P.get(str(pid), {})
         pos, nfl = p.get('p'), p.get('t')
         if not pos or nfl not in games:

@@ -1,6 +1,18 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-10-18 (2) - drill.py and comeback.py were not reproducible (fixed)
+- Found while refactoring: two identical runs of drill.py produced different answers - 16 of 60 drills disagreed on which slot was the key decision or what the call cost. Cause was pool(), which iterates a set() of player ids. Python randomises string hashing per process, so the set's order changed run to run, which changed the order random draws were consumed in, which changed every downstream number. comeback.py shared the code and the bug.
+- Fixed by sorting the id set before iterating. Verified: two consecutive runs of each now differ in 0 rows.
+- Worth being plain about what this means - every drill and comeback published before this fix was one sample of a wobbling process, not a stable answer. The grades were still computed correctly within a run; they just weren't repeatable. They are now.
+- Not a change to the season model: runseason.py, season.py and the playoff odds were never affected, since neither reads from a set.
+
+## 2026-10-18 (3) - league config derived from Sleeper instead of hardcoded (league.py)
+- New league.py derives league id, team keys, starting slots, scoring, playoff format and the full regular-season schedule from Sleeper's own API, including weeks not yet played.
+- Verified equivalence before adopting any of it: the derived config reproduces this league's hardcoded values exactly - all 9 starting slots, all 12 team keys, and the complete 12-team x 14-week schedule that was previously a literal string in season.py.
+- refresh.py and history.py now take the league id from league.py (LEAGUE_ID env var, else this league); drill.py and comeback.py take their starting slots from the league's roster_positions rather than a typed list.
+- This is the groundwork for running the model on any Sleeper league. season.py's SCHED_RAW string and the league-specific replacement ranks are still hardcoded and are the next things to move over.
+
 ## 2026-10-18 - Questionable/Doubtful are now probabilities, not verdicts (runseason.py)
 - Found a real gap: a player tagged QUESTIONABLE was modelled as fully healthy. The tag was never read at all - only IR/PUP/SUS/NA/COV (out 4 weeks) and OUT/DOUBTFUL (out 1 week, deterministic) were. That silently treated 17 currently-tagged players league-wide as 100% available.
 - Game-status tags now resolve as a fresh coin flip each simulated season: DOUBTFUL misses 93% of the time, QUESTIONABLE 30%. Rates come from final-injury-report studies - Footballguys' "Chance to Play" work puts Questionable at 70.7% playing and Doubtful at 6.9%; ESPN found roughly 75% for Questionable after the 2016 definition change. OUT and IR are unchanged and still deterministic.

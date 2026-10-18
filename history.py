@@ -9,7 +9,8 @@ Writes: state/player_weeks.json (per-week, per-team starters + every player's po
         state/kickoffs.json    (per-week NFL team -> kickoff timestamp, for event ordering)
 Safe to re-run; it rewrites both files from scratch."""
 import json, os, subprocess
-L = "1385346462094741504"
+import league
+L = league.league_id()          # LEAGUE_ID env var, else this league
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 

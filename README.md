@@ -43,6 +43,7 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 
 | File | Purpose |
 |---|---|
+| `league.py` | derives league id, team keys, starting slots, scoring and the full schedule from Sleeper — the groundwork for running on any league (`LEAGUE_ID` env var) |
 | `refresh.py` | live league data from Sleeper and ESPN |
 | `season.py` | builds the model input from rosters, projections, and role overrides |
 | `runseason.py` | season simulation |

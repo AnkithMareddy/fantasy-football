@@ -2,7 +2,8 @@
 """Refresh live league state from Sleeper. Run before season.py / runseason.py / gameday.py.
 Writes: sleeper/rosters.json (live, slot-keyed), state/standings.json, state/actuals.json, state/week.json"""
 import json, os, subprocess, time
-L = "1385346462094741504"
+import league
+L = league.league_id()          # LEAGUE_ID env var, else this league
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 def get(u):

@@ -27,7 +27,9 @@ import winprob as W
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 N = int(os.environ.get('COMEBACK_SIMS', '6000'))
 
-SLOTS = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF']
+import league
+# starting slots come from the league's own settings (roster_positions)
+SLOTS = league.config()['roster_slots']
 ELIGIBLE = {'QB': {'QB'}, 'RB': {'RB'}, 'WR': {'WR'}, 'TE': {'TE'},
             'FLEX': {'RB', 'WR', 'TE'}, 'K': {'K'}, 'DEF': {'DEF'}}
 
@@ -72,7 +74,7 @@ def build(week, m):
         s['slot'] = SLOTS[i] if i < len(SLOTS) else 'FLEX'
         s['pts'] = lw['starter_pts'][i] if i < len(lw['starter_pts']) else 0.0
     bench = []
-    for pid in lw['all_pts']:
+    for pid in sorted(lw['all_pts']):
         if str(pid) in {str(x) for x in lw['starters']}:
             continue
         r = info(pid, week)
