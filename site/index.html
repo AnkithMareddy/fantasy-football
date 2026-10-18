@@ -3,29 +3,32 @@
 <meta name="description" content="Live standings, odds, matchups, and NFL play-by-play tendencies for the ShowMeYourTDs fantasy league.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0E1512;
-    --surface: #151F1A;
-    --surface-2: #1B2921;
-    --line: rgba(237,234,226,0.10);
-    --line-strong: rgba(237,234,226,0.18);
-    --text: #EDEAE2;
-    --text-dim: #93A398;
-    --text-faint: #5E6D64;
-    --accent: #FF6A2B;
-    --accent-soft: rgba(255,106,43,0.14);
-    --gold: #FFC93F;
-    --good: #4CAF6D;
-    --good-soft: rgba(76,175,109,0.14);
-    --bad: #E2534B;
-    --bad-soft: rgba(226,83,75,0.14);
-    --info: #6FA8D8;
-    --font-display: "Bebas Neue", "Arial Narrow", sans-serif;
-    --font-body: "Barlow", "Helvetica Neue", Arial, sans-serif;
-    --font-label: "Barlow Condensed", "Helvetica Neue", Arial, sans-serif;
-    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    /* 8-bit Madden: night turf, chalk lines, arcade amber */
+    --bg: #07140C;
+    --surface: #0E2415;
+    --surface-2: #143019;
+    --line: rgba(244,246,232,0.16);
+    --line-strong: #2C7A3F;
+    --text: #F4F6E8;
+    --text-dim: #9FD39F;
+    --text-faint: #5F8F67;
+    --accent: #FFB000;
+    --accent-soft: rgba(255,176,0,0.16);
+    --gold: #FFD93B;
+    --good: #3DDC63;
+    --good-soft: rgba(61,220,99,0.16);
+    --bad: #FF4B3E;
+    --bad-soft: rgba(255,75,62,0.16);
+    --info: #46B1FF;
+    --font-display: "Press Start 2P", "Courier New", monospace;
+    --font-body: "VT323", "Courier New", monospace;
+    --font-label: "Press Start 2P", "Courier New", monospace;
+    --font-mono: "VT323", ui-monospace, Menlo, monospace;
+    --pix: 3px;
+    --hard: 4px 4px 0 rgba(0,0,0,0.7);
   }
 
   * { box-sizing: border-box; }
@@ -532,6 +535,162 @@
   .eff-bar-track { flex: 1; height: 16px; background: var(--surface-2); border-radius: 2px; overflow: hidden; position: relative; }
   .eff-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
   .eff-pct { flex: 0 0 42px; text-align: right; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-dim); }
+
+  /* =================== 8-BIT MADDEN THEME =================== */
+  @keyframes blink8 { 0%,55% { opacity: 1 } 56%,100% { opacity: .28 } }
+
+  *, *::before, *::after { border-radius: 0 !important; }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 19px;
+    line-height: 1.35;
+    background-color: var(--bg);
+    background-image:
+      repeating-linear-gradient(90deg, rgba(244,246,232,.05) 0 2px, transparent 2px 60px),
+      linear-gradient(180deg, #0A2011 0%, #07140C 55%);
+  }
+  /* CRT scanlines + vignette, purely decorative */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background:
+      repeating-linear-gradient(180deg, rgba(0,0,0,.20) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at 50% 45%, transparent 58%, rgba(0,0,0,.5) 100%);
+  }
+  img, .avatar, .headshot, .highlight-thumb { image-rendering: pixelated; }
+
+  /* ---- type ---- */
+  h1, h2, h3, .wordmark, .label, .pos-label, .rank, .proj-tag, .livepill,
+  .pill, .filter-btn, .more-btn, .ticker-item, .alert-chip, .matchup-vs,
+  .sens-legend, .board-meta, footer { font-family: var(--font-display); text-transform: uppercase; }
+  .panel h2 { font-size: 11px; line-height: 1.7; letter-spacing: 0; color: var(--accent); }
+  .panel h2 small { font-size: 8px; color: var(--text-faint); display: block; margin-top: 6px; }
+  .tabular, .num, .val, .pts, .pct, .value, table, td, th { font-family: var(--font-mono); font-size: 19px; }
+
+  /* ---- header: turf + yard lines ---- */
+  header.board {
+    border-bottom: 4px solid var(--accent);
+    background:
+      repeating-linear-gradient(90deg, rgba(244,246,232,.08) 0 3px, transparent 3px 54px),
+      linear-gradient(180deg, #16451F, #0A2412);
+  }
+  .wordmark {
+    font-size: 24px; color: var(--accent); line-height: 1.5;
+    text-shadow: 3px 3px 0 #000, 6px 6px 0 rgba(255,75,62,.55);
+  }
+  .board-meta { font-size: 9px; color: var(--text-dim); }
+  .board-meta strong { color: var(--gold); }
+
+  /* ---- panels: chunky borders, hard shadows ---- */
+  .panel {
+    border: var(--pix) solid var(--line-strong);
+    background: var(--surface);
+    box-shadow: var(--hard);
+  }
+  .panel h2 {
+    background: linear-gradient(180deg, #1B4A26, #10301A);
+    border-bottom: var(--pix) solid var(--line-strong);
+  }
+  .panel.gold-accent { border-color: var(--gold); }
+  .panel.gold-accent h2 { color: var(--gold); }
+  .panel.info-accent { border-color: var(--info); }
+  .panel.info-accent h2 { color: var(--info); }
+
+  /* ---- ticker: arcade marquee ---- */
+  .ticker {
+    border-top: var(--pix) solid var(--line-strong);
+    border-bottom: var(--pix) solid var(--line-strong);
+    background: #0A2412;
+  }
+  .ticker-item { font-size: 9px; }
+
+  /* ---- matchup cards ---- */
+  .matchup { border: var(--pix) solid var(--line-strong); box-shadow: var(--hard); background: var(--surface-2); }
+  .matchup-vs { font-size: 10px; color: var(--bad); text-shadow: 2px 2px 0 #000; }
+  .livepill { animation: blink8 1.1s steps(1, end) infinite; border: 2px solid currentColor; }
+
+  /* ---- bars become segmented LED meters ---- */
+  .win-bar, .faab-bar-fill, .eff-bar-fill, .injpred-bar-fill, .sens-bar {
+    background-image: repeating-linear-gradient(90deg, rgba(0,0,0,.45) 0 2px, transparent 2px 9px);
+  }
+  .faab-bar-track, .eff-bar-track, .injpred-bar-track { border: 2px solid #000; background: #081B0E; }
+
+  /* ---- pixel buttons ---- */
+  .filter-btn, .more-btn {
+    font-size: 9px; padding: 9px 11px; color: var(--text);
+    background: #10301A; border: 2px solid var(--line-strong); box-shadow: 3px 3px 0 #000;
+  }
+  .filter-btn:hover, .more-btn:hover { background: #17421F; }
+  .filter-btn:active, .more-btn:active { transform: translate(3px, 3px); box-shadow: none; }
+  .filter-btn.active, .filter-btn[aria-pressed="true"] { background: var(--accent); color: #140A00; border-color: var(--gold); }
+
+  /* ---- chips, pills, tags ---- */
+  .pill, .alert-chip, .proj-tag, .pos-label, .you-flag {
+    font-size: 8px; padding: 5px 7px; border: 2px solid currentColor; background: rgba(0,0,0,.35);
+  }
+
+  /* ---- tables: chalk rules ---- */
+  table { border-collapse: collapse; }
+  th { font-family: var(--font-display); font-size: 8px; color: var(--text-faint); padding-bottom: 10px; }
+  td { border-top: 2px solid rgba(244,246,232,.10); }
+  tr.mine td, .list-row.mine { background: var(--accent-soft); box-shadow: inset 4px 0 0 var(--accent); }
+
+  /* ---- cards ---- */
+  .award-card, .position-card, .pod-card, .highlight-card, .recap-strip {
+    border: 2px solid var(--line-strong); background: var(--surface-2); box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+  }
+  .highlight-thumb { border-bottom: 2px solid var(--line-strong); }
+
+  /* ---- misc ---- */
+  .good { color: var(--good); } .bad { color: var(--bad); } .info { color: var(--info); }
+  .skel { font-family: var(--font-display); font-size: 11px; color: var(--accent); animation: blink8 1s steps(1,end) infinite; }
+  footer { font-size: 8px; line-height: 2; color: var(--text-faint); border-top: var(--pix) solid var(--line-strong); }
+  .panel-note, .empty-note { font-family: var(--font-body); font-size: 17px; color: var(--text-dim); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .livepill, .skel { animation: none; }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+    .wordmark { font-size: 16px; }
+    .panel h2 { font-size: 9px; }
+    .tabular, .num, .val, .pts, .pct, .value, table, td, th { font-size: 17px; }
+  }
+
+  /* ---- 8-bit fit pass: pixel glyphs are far wider than the original faces ---- */
+  body { font-size: 18px; }
+
+  /* names wrap instead of truncating to "Bisho…" */
+  .matchup-row .name .tn { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+  .lu-name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+  .matchup { padding: 12px 13px; }
+  .lu-row { font-size: 15px; gap: 8px; }
+  .lu-pos, .lu-state { font-size: 13px; }
+
+  /* status chips wrap rather than clipping mid-word */
+  .alert-chip { font-size: 7px; line-height: 1.7; white-space: normal !important; padding: 4px 6px; }
+  .alert-chips { gap: 5px; }
+
+  /* every grid needs more column width now */
+  .matchups { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 3px; }
+  .award-cards { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 3px; }
+  .position-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 3px; }
+  .pod-grid { grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .highlight-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+  /* scoreboard HUD numbers were rendering tiny */
+  .board-meta { font-size: 9px; gap: 14px; flex-wrap: wrap; }
+  .board-meta strong { font-family: var(--font-mono); font-size: 16px; color: var(--gold); }
+
+  /* avatar placeholders read as blank white squares on turf */
+  .avatar { background: #0A2412; border: 2px solid var(--line-strong); }
+
+  @media (max-width: 760px) {
+    .matchups, .award-cards, .pod-grid, .highlight-grid { grid-template-columns: 1fr; }
+  }
+
+  /* panels in the 2-col rows shouldn't stretch to the tallest neighbour */
+  .grid { align-items: start; }
 </style>
 
 <header class="board">
