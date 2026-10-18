@@ -41,9 +41,11 @@ cp site/data.json "$DEPLOY_DIR/data.json"
 # no wrapping — copy it and its data straight across.
 cp site/arcade.html "$DEPLOY_DIR/arcade.html"
 cp site/arcade.json "$DEPLOY_DIR/arcade.json"
+cp site/daily.html "$DEPLOY_DIR/daily.html"
+cp site/puzzles.json "$DEPLOY_DIR/puzzles.json"
 
 cd "$DEPLOY_DIR"
-git add index.html data.json arcade.html arcade.json
+git add index.html data.json arcade.html arcade.json daily.html puzzles.json
 if git diff --cached --quiet; then
   echo "deploy_site.sh: no changes to publish"
 else

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShowMeYourTDs Daily</title>
+<meta name="description" content="Three daily football puzzles from the ShowMeYourTDs league: guess the player, the game, and the manager.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07140C; --surface: #0E2415; --surface-2: #143019;
+    --line: rgba(244,246,232,0.16); --line-strong: #2C7A3F;
+    --text: #F4F6E8; --text-dim: #9FD39F; --text-faint: #5F8F67;
+    --accent: #FFB000; --gold: #FFD93B;
+    --good: #3DDC63; --good-soft: rgba(61,220,99,0.16);
+    --bad: #FF4B3E; --bad-soft: rgba(255,75,62,0.16);
+    --info: #46B1FF;
+    --font-display: "Press Start 2P", "Courier New", monospace;
+    --font-body: "VT323", "Courier New", monospace;
+    --pix: 3px; --hard: 4px 4px 0 rgba(0,0,0,0.7);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body);
+         font-size: 20px; line-height: 1.35; image-rendering: pixelated; }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.18) 0 1px, transparent 1px 3px); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 64px; position: relative; z-index: 1; }
+  h1 { font-family: var(--font-display); font-size: 18px; margin: 0 0 4px; color: var(--accent); }
+  .sub { color: var(--text-faint); margin-bottom: 18px; }
+  a { color: var(--info); }
+  .panel { background: var(--surface); border: var(--pix) solid var(--line-strong);
+           box-shadow: var(--hard); padding: 14px; margin-bottom: 18px; }
+  .lbl { font-family: var(--font-display); font-size: 10px; color: var(--text-dim); }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  button { font-family: var(--font-display); font-size: 10px; color: var(--text);
+    background: var(--surface-2); border: var(--pix) solid var(--line-strong);
+    padding: 9px 11px; cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,.6); }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button[aria-pressed="true"] { background: var(--accent); color: #0B0B0B; border-color: var(--gold); }
+  button:disabled { opacity: .45; cursor: default; }
+  .tabs button { font-size: 11px; padding: 10px 13px; }
+  input { font-family: var(--font-body); font-size: 20px; padding: 10px; width: 100%;
+    background: var(--surface-2); color: var(--text); border: var(--pix) solid var(--line-strong); }
+  input:focus { outline: none; border-color: var(--accent); }
+  .clue { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px;
+    border: 2px solid var(--line-strong); background: var(--surface-2); margin-bottom: 6px; }
+  .clue .k { font-family: var(--font-display); font-size: 9px; color: var(--text-dim); }
+  .clue .v { color: var(--gold); }
+  .clue.locked { opacity: .35; }
+  .clue.locked .v { color: var(--text-faint); }
+  .guess { padding: 6px 10px; border-bottom: 1px solid var(--line); display: flex;
+           justify-content: space-between; gap: 8px; }
+  .guess.wrong { background: var(--bad-soft); }
+  .guess.right { background: var(--good-soft); }
+  .verdict { font-family: var(--font-display); font-size: 12px; padding: 12px; margin: 12px 0;
+             border: var(--pix) solid var(--line-strong); line-height: 1.7; }
+  .win { border-color: var(--good); background: var(--good-soft); }
+  .lose { border-color: var(--bad); background: var(--bad-soft); }
+  .jersey { display: block; margin: 0 auto 12px; }
+  svg.curve { display: block; width: 100%; height: auto; border: var(--pix) solid var(--line-strong);
+              background: var(--surface-2); }
+  .tally { font-family: var(--font-display); font-size: 10px; color: var(--text-dim); line-height: 1.9; }
+  .hide { display: none !important; }
+  .note { font-size: 17px; color: var(--text-faint); border-left: var(--pix) solid var(--line-strong);
+          padding-left: 10px; margin-top: 10px; }
+  .pips { font-family: var(--font-display); font-size: 14px; letter-spacing: 2px; }
+  @media (max-width: 560px) { h1 { font-size: 14px; } body { font-size: 19px; } }
+</style>
+
+<div class="wrap">
+  <h1>SHOWMEYOURTDS DAILY</h1>
+  <div class="sub">Three puzzles. Same for everyone, every day.
+    <a href="index.html">&larr; league</a> &middot; <a href="arcade.html">arcade &rarr;</a></div>
+
+  <div class="row tabs" style="margin-bottom:16px">
+    <button id="tab-player" aria-pressed="true">GUESS THE PLAYER</button>
+    <button id="tab-game" aria-pressed="false">GUESS THE GAME</button>
+    <button id="tab-manager" aria-pressed="false">GUESS THE MANAGER</button>
+  </div>
+
+  <div class="panel">
+    <div class="row" style="justify-content:space-between">
+      <span class="lbl" id="puz-title">GUESS THE PLAYER</span>
+      <span class="pips" id="pips"></span>
+    </div>
+    <div id="visual" style="margin:14px 0"></div>
+    <div id="clues"></div>
+    <div style="margin-top:12px">
+      <input id="guess" list="answers" placeholder="Type your guess…" autocomplete="off">
+      <datalist id="answers"></datalist>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="submit">SUBMIT</button>
+      <button id="skip">SKIP &mdash; REVEAL A CLUE</button>
+    </div>
+    <div id="verdict"></div>
+    <div id="guesses" style="margin-top:10px"></div>
+  </div>
+
+  <div class="panel">
+    <div class="lbl">YOUR RECORD</div>
+    <div class="tally" id="tally" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="share">COPY RESULT</button>
+      <button id="reset">RESET</button>
+    </div>
+    <div class="note">Six guesses. Every wrong guess or skip reveals one more clue, hardest
+      first. The puzzle is picked from the date, so everyone in the league gets the same one
+      &mdash; come back tomorrow for the next.</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var D = null, mode = "player", st = null;
+  var MAX = 6;
+  var $ = function (id) { return document.getElementById(id); };
+  var TITLES = { player: "GUESS THE PLAYER", game: "GUESS THE GAME", manager: "GUESS THE MANAGER" };
+
+  function store(k, v) {
+    try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || "null");
+          localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; }
+  }
+  function esc(s) { var d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" +
+           String(d.getDate()).padStart(2, "0");
+  }
+  // FNV-1a: same date + same mode -> same puzzle for every player, with no server
+  function pick(seed, len) {
+    var h = 2166136261;
+    for (var i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return len ? Math.abs(h) % len : 0;
+  }
+
+  function key() { return "smytd_daily_" + mode + "_" + today(); }
+
+  function load() {
+    var pool = (D[mode] || {}).pool || [];
+    if (!pool.length) return null;
+    var p = pool[pick(today() + "|" + mode, pool.length)];
+    var saved = store(key());
+    st = saved || { guesses: [], done: false, won: false };
+    return p;
+  }
+
+  function jersey(p, teamKnown) {
+    // Team colours ARE the team. Stay greyscale until the NFL TEAM clue unlocks,
+    // otherwise the shirt hands over the answer on clue one.
+    var c = teamKnown ? (p.colors || ["#2C7A3F", "#FFB000"]) : ["#2A3A2E", "#7E8C80"];
+    var num = p.num == null ? "--" : String(p.num);
+    return '<svg class="jersey" width="150" height="150" viewBox="0 0 30 30" role="img" ' +
+      'aria-label="Jersey number ' + esc(num) + '">' +
+      '<rect width="30" height="30" fill="none"/>' +
+      '<path d="M8 5 L12 5 L15 7 L18 5 L22 5 L26 8 L23 12 L22 11 L22 26 L8 26 L8 11 L7 12 L4 8 Z" ' +
+      'fill="' + c[0] + '" stroke="' + c[1] + '" stroke-width="1"/>' +
+      '<text x="15" y="21" text-anchor="middle" font-family="monospace" font-size="9" ' +
+      'font-weight="bold" fill="' + c[1] + '">' + esc(num) + "</text></svg>";
+  }
+
+  function curve(p) {
+    var W = 600, H = 170, pad = 8, n = p.curve.length;
+    var x = function (i) { return pad + i * (W - 2 * pad) / Math.max(1, n - 1); };
+    var y = function (v) { return H - pad - v * (H - 2 * pad); };
+    var pts = p.curve.map(function (v, i) { return x(i) + "," + y(v); }).join(" ");
+    return '<svg class="curve" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" ' +
+      'role="img" aria-label="Win probability curve"><line x1="0" y1="' + y(0.5) + '" x2="' + W +
+      '" y2="' + y(0.5) + '" stroke="var(--line)" stroke-width="2" stroke-dasharray="6 6"/>' +
+      '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="3"/>' +
+      p.curve.map(function (v, i) {
+        return '<circle cx="' + x(i) + '" cy="' + y(v) + '" r="4" fill="var(--line-strong)"/>';
+      }).join("") + "</svg>";
+  }
+
+  function render() {
+    var p = load();
+    if (!p) { $("visual").innerHTML = "No puzzles available yet."; return; }
+    $("puz-title").textContent = TITLES[mode];
+
+    var shown = Math.min(p.clues.length, 1 + st.guesses.length);
+    if (st.done) shown = p.clues.length;
+
+    var teamClue = p.clues.findIndex(function (c) { return c.k === "NFL TEAM"; });
+    var teamKnown = teamClue >= 0 && teamClue < shown;
+    $("visual").innerHTML = mode === "player" ? jersey(p, teamKnown)
+                          : (mode === "game" ? curve(p) : "");
+    $("clues").innerHTML = p.clues.map(function (c, i) {
+      var lock = i >= shown;
+      return '<div class="clue' + (lock ? " locked" : "") + '"><span class="k">' + esc(c.k) +
+        '</span><span class="v">' + (lock ? "????" : esc(c.v)) + "</span></div>";
+    }).join("");
+
+    var left = MAX - st.guesses.length;
+    $("pips").innerHTML = "&#9608;".repeat(Math.max(0, left)) + "&#9617;".repeat(Math.min(MAX, st.guesses.length));
+
+    $("guesses").innerHTML = st.guesses.map(function (g) {
+      return '<div class="guess ' + (g.ok ? "right" : "wrong") + '"><span>' + esc(g.v) +
+        "</span><span>" + (g.ok ? "✓" : "✗") + "</span></div>";
+    }).join("");
+
+    $("answers").innerHTML = ((D[mode] || {}).answers || []).map(function (a) {
+      return '<option value="' + esc(a) + '">';
+    }).join("");
+
+    $("guess").disabled = $("submit").disabled = $("skip").disabled = !!st.done;
+    if (st.done) {
+      $("verdict").innerHTML = '<div class="verdict ' + (st.won ? "win" : "lose") + '">' +
+        (st.won ? "GOT IT in " + st.guesses.length + (st.guesses.length === 1 ? " guess" : " guesses")
+                : "OUT OF GUESSES") +
+        "<br><span style=\"font-size:11px\">It was " + esc(p.answer) +
+        (mode === "game" && p.final ? " — final " + esc(p.final) : "") +
+        ".</span></div>";
+    } else {
+      $("verdict").innerHTML = "";
+    }
+    drawTally();
+  }
+
+  function norm(s) { return (s || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+
+  function submit(skipped) {
+    var p = load();
+    if (!p || st.done) return;
+    var v = skipped ? "(skipped)" : $("guess").value.trim();
+    if (!skipped && !v) return;
+    var ok = !skipped && norm(v) === norm(p.answer);
+    st.guesses.push({ v: v, ok: ok });
+    if (ok) { st.done = true; st.won = true; }
+    else if (st.guesses.length >= MAX) { st.done = true; st.won = false; }
+    store(key(), st);
+    if (st.done) record(st.won, st.guesses.length);
+    $("guess").value = "";
+    render();
+  }
+
+  function record(won, n) {
+    var k = "smytd_daily_rec_" + mode;
+    var r = store(k) || { played: 0, won: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0] };
+    var last = store(k + "_last");
+    if (last === today()) return;              // one result per day per mode
+    store(k + "_last", today());
+    r.played++;
+    if (won) { r.won++; r.streak++; r.best = Math.max(r.best, r.streak); r.dist[n - 1]++; }
+    else { r.streak = 0; }
+    store(k, r);
+  }
+
+  function drawTally() {
+    var r = store("smytd_daily_rec_" + mode) ||
+            { played: 0, won: 0, streak: 0, best: 0, dist: [0, 0, 0, 0, 0, 0] };
+    if (!r.played) { $("tally").innerHTML = "Nothing played yet."; return; }
+    $("tally").innerHTML = "PLAYED &nbsp;" + r.played + "<br>SOLVED &nbsp;" + r.won +
+      " (" + Math.round(100 * r.won / r.played) + "%)<br>STREAK &nbsp;" + r.streak +
+      " &nbsp;(best " + r.best + ")";
+  }
+
+  function share() {
+    var p = load();
+    if (!p || !st.done) { alert("Finish today's puzzle first."); return; }
+    var grid = st.guesses.map(function (g) { return g.ok ? "🟩" : "⬛"; }).join("");
+    var txt = "ShowMeYourTDs Daily — " + TITLES[mode] + " " + today() + "\n" +
+      (st.won ? st.guesses.length + "/" + MAX : "X/" + MAX) + " " + grid;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(txt).then(function () { alert("Copied:\n\n" + txt); },
+                                              function () { prompt("Copy:", txt); });
+    } else { prompt("Copy:", txt); }
+  }
+
+  function tab(m) {
+    mode = m;
+    ["player", "game", "manager"].forEach(function (k) {
+      $("tab-" + k).setAttribute("aria-pressed", String(k === m));
+    });
+    $("verdict").innerHTML = "";
+    render();
+  }
+
+  fetch("puzzles.json", { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (json) {
+      D = json;
+      $("tab-player").onclick = function () { tab("player"); };
+      $("tab-game").onclick = function () { tab("game"); };
+      $("tab-manager").onclick = function () { tab("manager"); };
+      $("submit").onclick = function () { submit(false); };
+      $("skip").onclick = function () { submit(true); };
+      $("share").onclick = share;
+      $("reset").onclick = function () {
+        ["player", "game", "manager"].forEach(function (m) {
+          store("smytd_daily_rec_" + m, { played: 0, won: 0, streak: 0, best: 0, dist: [0,0,0,0,0,0] });
+          store("smytd_daily_rec_" + m + "_last", null);
+          store("smytd_daily_" + m + "_" + today(), null);
+        });
+        st = { guesses: [], done: false, won: false };
+        render();
+      };
+      $("guess").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); submit(false); }
+      });
+      render();
+    })
+    .catch(function (e) {
+      document.querySelector(".wrap").insertAdjacentHTML("beforeend",
+        '<div class="panel" style="border-color:var(--bad)">Could not load puzzles.json (' +
+        e.message + "). Run <code>python3 dailygames.py</code> and redeploy.</div>");
+    });
+})();
+</script>
+</html>

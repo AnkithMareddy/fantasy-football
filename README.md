@@ -64,6 +64,8 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `build_site.py` | consolidates state into `site/data.json` for the public dashboard |
 | `site/index.html` | the public dashboard page (an unwrapped HTML fragment — see deploy_site.sh) |
 | `site/arcade.html` | the arcade page: REPLAY, THE DRILL, COMEBACK (standalone, reads `arcade.json`) |
+| `dailygames.py` | daily puzzle pool — guess the player, the game, the manager — written to `site/puzzles.json` |
+| `site/daily.html` | the daily puzzle page (standalone, reads `puzzles.json`) |
 | `deploy_site.sh` | wraps site/index.html + data.json and pushes them to the public fantasy-football-hub repo (GitHub Pages) |
 | `sleeper/team_display.json` | current Sleeper team name + avatar per team, cosmetic only (the model's internal team key never changes) |
 | `state/scouting_notes.md` | durable team/coach patterns noticed across weeks, maintained by the report run |

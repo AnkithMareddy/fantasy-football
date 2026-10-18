@@ -25,7 +25,10 @@ if not os.path.exists(pm) or time.time() - os.path.getmtime(pm) > PLAYERS_TTL_S:
     for k, v in raw.items():
         nm = v.get('full_name') or ' '.join(x for x in (v.get('first_name'), v.get('last_name')) if x) or k
         slim[k] = {'n': nm, 'p': v.get('position'), 't': v.get('team'),
-                   'inj': v.get('injury_status'), 'st': v.get('status')}
+                   'inj': v.get('injury_status'), 'st': v.get('status'),
+                   # clue fields for the daily puzzles (dailygames.py)
+                   'num': v.get('number'), 'age': v.get('age'),
+                   'exp': v.get('years_exp'), 'col': v.get('college')}
     json.dump(slim, open(pm, 'w'))
 P = json.load(open(pm))
 
