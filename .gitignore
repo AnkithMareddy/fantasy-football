@@ -39,6 +39,7 @@ node_modules/
 state/whatif_*.json
 state/player_weeks.json
 state/kickoffs.json
+state/nflgames.json
 state/playback.json
 state/drills.json
 site/arcade.json

@@ -36,17 +36,34 @@ cur = int(get('https://api.sleeper.app/v1/state/nfl').get('week') or 1)
 # kickoff time per NFL team per week — this is what orders a replay. Two players on the
 # same NFL team always score in the same window; a Thursday game resolves before Sunday.
 kickoffs = {}
+# Real NFL results, for the NFL-knowledge daily puzzle. We already pull this scoreboard
+# for kickoff ordering and were discarding the scores; keeping them costs no extra calls.
+nflgames = {}
 for w in range(1, min(cur, 14) + 1):
-    wk = {}
+    wk, games = {}, []
     for e in get(f'https://site.api.espn.com/apis/site/v2/sports/football/nfl/'
                  f'scoreboard?seasontype=2&week={w}').get('events', []):
         comp = e['competitions'][0]
+        status = comp['status']['type']['name']
+        side = {}
         for c in comp['competitors']:
             ab = {'WSH': 'WAS'}.get(c['team']['abbreviation'], c['team']['abbreviation'])
-            wk[ab] = {'kick': e['date'], 'status': comp['status']['type']['name']}
+            wk[ab] = {'kick': e['date'], 'status': status}
+            side[c.get('homeAway')] = {
+                'ab': ab,
+                'name': c['team'].get('displayName') or ab,
+                # score is a string in ESPN's payload, and absent before kickoff
+                'score': int(c['score']) if str(c.get('score', '')).isdigit() else None,
+            }
+        if status == 'STATUS_FINAL' and side.get('home') and side.get('away') \
+           and side['home']['score'] is not None and side['away']['score'] is not None:
+            games.append({'week': w, 'home': side['home'], 'away': side['away'],
+                          'kick': e['date']})
     kickoffs[str(w)] = wk
-    print(f"week {w}: {len(wk)} teams scheduled")
+    nflgames[str(w)] = games
+    print(f"week {w}: {len(wk)} teams scheduled, {len(games)} final")
 json.dump(kickoffs, open('state/kickoffs.json', 'w'), indent=1)
+json.dump(nflgames, open('state/nflgames.json', 'w'), indent=1)
 
 weeks = {}
 for w in range(1, min(cur, 14) + 1):

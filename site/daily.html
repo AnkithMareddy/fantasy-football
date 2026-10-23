@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ShowMeYourTDs Daily</title>
-<meta name="description" content="Three daily football puzzles from the ShowMeYourTDs league: guess the player, the game, and the manager.">
+<meta name="description" content="Five daily football puzzles in two tracks: NFL knowledge anyone can play, and ShowMeYourTDs league knowledge.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
@@ -70,13 +70,16 @@
 
 <div class="wrap">
   <h1>SHOWMEYOURTDS DAILY</h1>
-  <div class="sub">Three puzzles. Same for everyone, every day.
+  <div class="sub">Five puzzles, two tracks. Same for everyone, every day.
     <a href="index.html">&larr; league</a> &middot; <a href="arcade.html">arcade</a> &middot; <a href="gridiron.html">gridiron &rarr;</a></div>
 
-  <div class="row tabs" style="margin-bottom:16px">
-    <button id="tab-player" aria-pressed="true">GUESS THE PLAYER</button>
-    <button id="tab-game" aria-pressed="false">GUESS THE GAME</button>
-    <button id="tab-manager" aria-pressed="false">GUESS THE MANAGER</button>
+  <!-- Two tracks, rendered from puzzles.json so a new puzzle needs no markup change.
+       NFL = playable by any football fan; LEAGUE = only means something inside the league. -->
+  <div style="margin-bottom:16px">
+    <div class="lbl" style="margin-bottom:4px">NFL KNOWLEDGE</div>
+    <div class="row tabs" id="tabs-nfl" style="margin-bottom:10px"></div>
+    <div class="lbl" style="margin-bottom:4px">LEAGUE KNOWLEDGE</div>
+    <div class="row tabs" id="tabs-league"></div>
   </div>
 
   <div class="panel">
@@ -117,7 +120,15 @@
   var D = null, mode = "player", st = null;
   var MAX = 6;
   var $ = function (id) { return document.getElementById(id); };
-  var TITLES = { player: "GUESS THE PLAYER", game: "GUESS THE GAME", manager: "GUESS THE MANAGER" };
+  // Modes come from puzzles.json: every key carrying a pool is a playable puzzle, and
+  // each declares its own track and label. Nothing here is hardcoded per puzzle.
+  var MODES = [], TITLES = {};
+  function readModes(json) {
+    MODES = Object.keys(json).filter(function (k) {
+      return json[k] && json[k].pool && json[k].pool.length;
+    });
+    MODES.forEach(function (k) { TITLES[k] = json[k].label || k.toUpperCase(); });
+  }
 
   function store(k, v) {
     try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || "null");
@@ -272,25 +283,41 @@
 
   function tab(m) {
     mode = m;
-    ["player", "game", "manager"].forEach(function (k) {
-      $("tab-" + k).setAttribute("aria-pressed", String(k === m));
+    MODES.forEach(function (k) {
+      var b = $("tab-" + k);
+      if (b) b.setAttribute("aria-pressed", String(k === m));
     });
     $("verdict").innerHTML = "";
     render();
+  }
+
+  function buildTabs() {
+    ["nfl", "league"].forEach(function (track) {
+      var host = $("tabs-" + track);
+      if (!host) return;
+      host.innerHTML = MODES.filter(function (k) { return (D[k].track || "league") === track; })
+        .map(function (k) {
+          return '<button id="tab-' + k + '" aria-pressed="' + (k === mode) + '">' +
+            esc(TITLES[k]) + "</button>";
+        }).join("");
+      Array.prototype.forEach.call(host.querySelectorAll("button"), function (b) {
+        b.onclick = function () { tab(b.id.replace("tab-", "")); };
+      });
+    });
   }
 
   fetch("puzzles.json", { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (json) {
       D = json;
-      $("tab-player").onclick = function () { tab("player"); };
-      $("tab-game").onclick = function () { tab("game"); };
-      $("tab-manager").onclick = function () { tab("manager"); };
+      readModes(json);
+      if (MODES.indexOf(mode) < 0) mode = MODES[0];   // older saved mode, or none shipped
+      buildTabs();
       $("submit").onclick = function () { submit(false); };
       $("skip").onclick = function () { submit(true); };
       $("share").onclick = share;
       $("reset").onclick = function () {
-        ["player", "game", "manager"].forEach(function (m) {
+        MODES.forEach(function (m) {
           store("smytd_daily_rec_" + m, { played: 0, won: 0, streak: 0, best: 0, dist: [0,0,0,0,0,0] });
           store("smytd_daily_rec_" + m + "_last", null);
           store("smytd_daily_" + m + "_" + today(), null);
