@@ -1,6 +1,16 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-10-22 (5) - the site was never actually usable on a phone
+- Root cause, and it had been true all season: site/index.html had no viewport meta tag. A phone therefore laid the page out at 980px and scaled it down, so the text came out unreadable AND every responsive @media rule already in the file (640px, 760px, 860px) silently never fired. The three game pages had the tag; the one everyone opens did not.
+- Standings table: eight columns in a ~345px panel meant playoff and title odds - the entire point of the page - sat off-screen behind a sideways scroll nobody finds. On phones it now shows team / projected record / playoff / title and hides actual record, points for, bye odds and FAAB. Two things had to be fixed for that to work: the rule had to be scoped to the standings (Team Tendencies shares the same wrapper class but has different columns, and forcing its overflow visible would have pushed the whole page sideways), and the base `table` rule sets min-width:600px, which pinned the table wider than the panel regardless of the width asked for. Long team names now truncate with an ellipsis instead of running into the record column.
+- Navigation: every page rolled its own. index.html had three gold header buttons; the other three each had a different row of small inline text links. Nothing told you where you were. New site/nav.js is one shared component used by all four - a bar under the header on desktop, a fixed tab bar at the BOTTOM on phones, where a thumb can actually reach it, with the current page marked. deploy_site.sh ships it.
+- Touch targets: an audit at 390px found 21 controls under Apple's 44px minimum on the arcade page alone (week chips 32px, panel tabs 41px). Now 0 across all four pages.
+- Two bugs I introduced and caught by measuring rather than eyeballing: a 16px minimum font meant to stop iOS zooming on focused inputs was applied to buttons too, which tripled the size of the week and matchup chips (it belongs on form fields only); and a first attempt at `position: sticky` for the tab bar would not have pinned at all, because bottom-sticky only holds an element that sits last in its container.
+- Worth recording to avoid a false alarm later: in a scaled device emulator window.innerWidth and documentElement.clientWidth disagree (456 vs 390 here), which makes a fixed full-width bar look clipped. On a real phone they are equal - verified at a width where they match, where the bar spans exactly and all four tabs render 175x58.
+- Also added theme-color and the iOS web-app meta tags so the browser chrome matches the board and the site behaves when saved to a home screen.
+
+
 ## 2026-10-22 (4) - the drill is a run now, not an endless list
 - The previous entry made the drill honest; it did not make it a game. It was infinite practice with a counter: no clock, no fail state, no difficulty curve, nothing at stake.
 - RUN mode: ten spots, a 20-second play clock on each, three strikes and you are out, then an end screen with a shareable grade grid and a best-run record. Letting the clock expire is graded as the WORST option on the board, not a neutral skip - in a live week an unset lineup is the worst outcome available, so the game should treat it that way.

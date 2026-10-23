@@ -2,6 +2,10 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07140C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShowMeYourTDs">
 <title>ShowMeYourTDs Arcade</title>
 <meta name="description" content="Replay every ShowMeYourTDs matchup with a live win-probability curve, and drill the lineup call that decided it.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -112,7 +116,7 @@
 <div class="wrap">
   <h1>SHOWMEYOURTDS ARCADE</h1>
   <div class="sub">Replay any matchup with a live win% curve &mdash; then take the call yourself.
-    <a href="index.html">&larr; back to the league</a> &middot; <a href="daily.html">daily puzzles</a> &middot; <a href="gridiron.html">gridiron &rarr;</a></div>
+    <span class="legacy-nav"><a href="index.html">&larr; back to the league</a> &middot; <a href="daily.html">daily puzzles</a> &middot; <a href="gridiron.html">gridiron &rarr;</a></span></div>
 
   <div class="row tabs">
     <button id="tab-replay" aria-pressed="true">&#9654; REPLAY</button>
@@ -851,4 +855,5 @@
     });
 })();
 </script>
+<script src="nav.js" defer></script>
 </html>

@@ -44,6 +44,8 @@ open(f'{deploy_dir}/index.html', 'w').write(wrapped)
 PYEOF
 
 cp site/data.json "$DEPLOY_DIR/data.json"
+# shared navigation, included by all four pages
+cp site/nav.js "$DEPLOY_DIR/nav.js"
 # arcade.html is already a complete standalone document, so unlike index.html it needs
 # no wrapping — copy it and its data straight across.
 cp site/arcade.html "$DEPLOY_DIR/arcade.html"
@@ -54,7 +56,7 @@ cp site/gridiron.html "$DEPLOY_DIR/gridiron.html"
 cp site/teams.json "$DEPLOY_DIR/teams.json"
 
 cd "$DEPLOY_DIR"
-git add index.html data.json arcade.html arcade.json daily.html puzzles.json gridiron.html teams.json
+git add index.html data.json nav.js arcade.html arcade.json daily.html puzzles.json gridiron.html teams.json
 if git diff --cached --quiet; then
   echo "deploy_site.sh: no changes to publish"
 else

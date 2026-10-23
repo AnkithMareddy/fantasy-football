@@ -2,6 +2,10 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07140C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShowMeYourTDs">
 <title>ShowMeYourTDs Gridiron</title>
 <meta name="description" content="Play your ShowMeYourTDs matchup as an 8-bit football game — call the plays, your real roster executes them.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -65,8 +69,8 @@
 <div class="wrap">
   <h1>GRIDIRON</h1>
   <div class="sub">Your roster, your matchup, your play calls.
-    <a href="index.html">&larr; league</a> &middot; <a href="arcade.html">arcade</a> &middot;
-    <a href="daily.html">daily</a></div>
+    <span class="legacy-nav"><a href="index.html">&larr; league</a> &middot; <a href="arcade.html">arcade</a> &middot;
+    <a href="daily.html">daily</a></span></div>
 
   <div class="panel" id="setup">
     <div class="lbl">PICK THE MATCHUP</div>
@@ -338,4 +342,5 @@
     });
 })();
 </script>
+<script src="nav.js" defer></script>
 </html>

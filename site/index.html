@@ -1,4 +1,12 @@
 <meta charset="utf-8">
+<!-- Without this a phone renders the page at a 980px desktop width and scales it down,
+     so every media query below silently never fires and the text comes out unreadable.
+     arcade.html, daily.html and gridiron.html always had it; this page did not. -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07140C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShowMeYourTDs">
 <title>ShowMeYourTDs</title>
 <meta name="description" content="Live standings, odds, matchups, and NFL play-by-play tendencies for the ShowMeYourTDs fantasy league.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -697,6 +705,49 @@
     .matchups, .award-cards, .pod-grid, .highlight-grid { grid-template-columns: 1fr; }
   }
 
+  /* ---- phone ----
+     The standings table carries eight columns. At 390px that's a ~1000px table in a
+     ~345px box, so the headline numbers — playoff and title odds, the entire point of
+     the page — sat off-screen behind a sideways scroll nobody discovers.
+
+     Rather than shrink everything to illegibility, drop the columns you can reconstruct
+     or don't need at a glance (actual record, points for, bye odds, FAAB) and keep
+     team / projected record / playoff / title. Those four fit without scrolling. The
+     full table is still there on a tablet or desktop. */
+  @media (max-width: 720px) {
+    /* Scoped to the standings only. The Team Tendencies table shares .table-scroll but
+       has different columns, and it KEEPS its internal scroll — forcing overflow visible
+       there would push the whole page sideways. */
+    .standings-scroll { overflow-x: visible; }
+    /* the base `table` rule sets min-width:600px, which otherwise pins the table wider
+       than the panel no matter what width we ask for */
+    .standings-scroll table { width: 100%; min-width: 0; table-layout: fixed; }
+    .standings-scroll th:nth-child(3), .standings-scroll td:nth-child(3),  /* actual rec */
+    .standings-scroll th:nth-child(4), .standings-scroll td:nth-child(4),  /* points for */
+    .standings-scroll th:nth-child(6), .standings-scroll td:nth-child(6),  /* bye odds   */
+    .standings-scroll th:nth-child(8), .standings-scroll td:nth-child(8) { /* faab       */
+      display: none;
+    }
+    .standings-scroll th, .standings-scroll td { padding: 7px 4px; font-size: 15px; }
+    .standings-scroll th:first-child, .standings-scroll td:first-child { width: 46%; }
+    /* Headers are set in the display face, which is very wide — at these column widths
+       "Playoff" and "Title" ran straight over each other. Shrink and allow a wrap. */
+    .standings-scroll th { font-size: 8px; white-space: normal; line-height: 1.35; }
+    /* Long team names were overflowing into the record column. Truncate the NAME rather
+       than the cell, so rank and avatar always stay visible. */
+    .standings-scroll .team-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .standings-scroll .team-cell .tn {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+    .standings-scroll .team-cell .avatar { flex: 0 0 auto; }
+    /* the ticker is decorative; on a phone it's just noise competing with the content */
+    .ticker { display: none; }
+    .board-meta { font-size: 11px; gap: 6px 10px; }
+    .wordmark { font-size: 20px; line-height: 1.5; }
+    /* give every row of the page a consistent 16px gutter */
+    .wrap { padding-left: 16px; padding-right: 16px; }
+  }
+
   /* panels in the 2-col rows shouldn't stretch to the tallest neighbour */
   .grid { align-items: start; }
 </style>
@@ -708,9 +759,9 @@
       <span>WEEK <strong id="m-week">—</strong></span>
       <span><strong id="m-sims">—</strong> SEASON SIMS</span>
       <span id="m-updated"></span>
-      <span><a class="arcade-link" href="arcade.html">&#9654; ARCADE</a></span>
-      <span><a class="arcade-link" href="daily.html">&#9733; DAILY</a></span>
-      <span><a class="arcade-link" href="gridiron.html">&#127944; GRIDIRON</a></span>
+      <span class="legacy-nav"><a class="arcade-link" href="arcade.html">&#9654; ARCADE</a></span>
+      <span class="legacy-nav"><a class="arcade-link" href="daily.html">&#9733; DAILY</a></span>
+      <span class="legacy-nav"><a class="arcade-link" href="gridiron.html">&#127944; GRIDIRON</a></span>
     </div>
   </div>
 </header>
@@ -778,7 +829,7 @@ function render(data) {
     <div class="grid">
       <section class="panel">
         <h2>Standings &amp; Odds <small>${data.sims.toLocaleString()} sims</small></h2>
-        <div class="panel-body table-scroll">
+        <div class="panel-body table-scroll standings-scroll">
           ${standingsTable(s)}
         </div>
       </section>
@@ -1334,3 +1385,4 @@ function ordinal(n) {
 
 main();
 </script>
+<script src="nav.js" defer></script>

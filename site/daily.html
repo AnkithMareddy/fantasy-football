@@ -2,6 +2,10 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07140C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ShowMeYourTDs">
 <title>ShowMeYourTDs Daily</title>
 <meta name="description" content="Five daily football puzzles in two tracks: NFL knowledge anyone can play, and ShowMeYourTDs league knowledge.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,7 +75,7 @@
 <div class="wrap">
   <h1>SHOWMEYOURTDS DAILY</h1>
   <div class="sub">Five puzzles, two tracks. Same for everyone, every day.
-    <a href="index.html">&larr; league</a> &middot; <a href="arcade.html">arcade</a> &middot; <a href="gridiron.html">gridiron &rarr;</a></div>
+    <span class="legacy-nav"><a href="index.html">&larr; league</a> &middot; <a href="arcade.html">arcade</a> &middot; <a href="gridiron.html">gridiron &rarr;</a></span></div>
 
   <!-- Two tracks, rendered from puzzles.json so a new puzzle needs no markup change.
        NFL = playable by any football fan; LEAGUE = only means something inside the league. -->
@@ -337,4 +341,5 @@
     });
 })();
 </script>
+<script src="nav.js" defer></script>
 </html>
