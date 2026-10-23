@@ -162,8 +162,9 @@
     <div class="panel">
       <div class="lbl">YOUR CARD</div>
       <div class="tally" id="tally" style="margin-top:8px"></div>
-      <div class="note">Every option is simulated from pregame on season averages and graded on
-        win chance, not on what happened. A right call that busted still grades green.</div>
+      <div class="note">Every option is simulated from pregame and graded on win chance, not on
+        what happened &mdash; a right call that busted still grades green. Projections use only
+        the weeks played <b>before</b> this one, so nothing here was known after the fact.</div>
     </div>
   </section>
 
@@ -331,14 +332,17 @@
       "<div>You're setting <b>" + esc(d.team_name) + "</b>'s lineup before kickoff. The <b>" +
       d.slot + "</b> slot is the call that swung this matchup most (" +
       (d.spread * 100).toFixed(0) + "pp between the best and worst option).</div>" +
-      '<div class="muted" style="margin-top:6px">Pick who you start. Projections are season averages &mdash; ' +
-      "no hindsight, same information the manager had.</div>" +
+      '<div class="muted" style="margin-top:6px">Pick who you start. No projections&mdash;' +
+      "you're judging the players, same as the manager was. Form and win% are revealed " +
+      "once you call it.</div>" +
       (d.lineup ? field(d.lineup, "drill") : "");
+    // Deliberately name, position and NFL team only. Showing the projection made this a
+    // sorting exercise: on the shipped data the highest-projection option was the best
+    // call in 72 of 72 drills, so the whole game was "click the biggest number".
     var html = "";
     (d.options || []).forEach(function (o, i) {
       html += '<button class="opt" data-i="' + i + '"><b>' + esc(o.name) + "</b>" +
-        '<span class="muted">' + (o.pos || "") + " " + (o.nfl || "") +
-        " &middot; projects " + o.ppg + " pts</span></button>";
+        '<span class="muted">' + (o.pos || "") + " " + (o.nfl || "") + "</span></button>";
     });
     $("options").innerHTML = html;
     Array.prototype.forEach.call($("options").querySelectorAll("button"), function (b) {
@@ -350,14 +354,20 @@
   function answer(i) {
     if (answered) return;
     answered = true;
-    var d = drill(), picked = d.options[i], best = d.options[0];
+    // options are shuffled on purpose, so the best call has to be looked up by id —
+    // options[0] is no longer the answer
+    var d = drill(), picked = d.options[i], best = null;
+    d.options.forEach(function (o) { if (o.pid === d.best_pid) best = o; });
+    if (!best) best = picked;
     var cost = best.wp - picked.wp;
     Array.prototype.forEach.call($("options").querySelectorAll("button"), function (b) {
       var o = d.options[+b.dataset.i];
       b.classList.add("g-" + o.grade);
       b.disabled = true;
+      var form = (o.log || []).map(function (e) { return "wk" + e.w + " " + e.pts.toFixed(1); }).join(" / ");
       b.innerHTML += '<span class="muted"> &rarr; ' + (o.wp * 100).toFixed(1) +
-        "% to win &middot; actually scored " + o.pts.toFixed(1) + "</span>";
+        "% to win &middot; projected " + o.ppg + " &middot; actually scored " + o.pts.toFixed(1) +
+        (form ? "<br>form going in: " + form : "") + "</span>";
     });
     var g = picked.grade, word = { green: "BEST CALL", yellow: "CLOSE", orange: "COSTLY", red: "BIG MISS" }[g];
     var v = '<div class="verdict g-' + g + '">' + word + " &mdash; " +
@@ -378,18 +388,29 @@
       (d.result.won ? "won" : "lost") + ").</span></div>";
     $("verdict").innerHTML = v;
 
-    var t = store("smytd_drill") || { n: 0, cost: 0, green: 0, streak: 0, best: 0 };
+    var t = store("smytd_drill") || { n: 0, cost: 0, green: 0, streak: 0, best: 0, score: 0 };
     t.n++; t.cost += cost;
+    if (t.score === undefined) t.score = 0;
+    // Points by grade, with a streak multiplier so a run of good calls compounds and a
+    // miss actually stings. Capped at 2x so the tenth green isn't worth ten of the first.
+    var pts = { green: 100, yellow: 50, orange: 20, red: 0 }[g] || 0;
+    var mult = 1 + Math.min(t.streak, 10) * 0.1;
+    var earned = Math.round(pts * (g === "red" ? 1 : mult));
+    t.score += earned;
     if (g === "green") { t.green++; t.streak++; t.best = Math.max(t.best, t.streak); } else { t.streak = 0; }
     store("smytd_drill", t);
+    $("verdict").innerHTML += '<div class="muted" style="margin-top:4px">+' + earned +
+      " pts" + (mult > 1 && g !== "red" ? " (x" + mult.toFixed(1) + " streak)" : "") +
+      " &middot; total " + t.score + "</div>";
     drawTally();
   }
 
   function drawTally() {
-    var t = store("smytd_drill") || { n: 0, cost: 0, green: 0, streak: 0, best: 0 };
+    var t = store("smytd_drill") || { n: 0, cost: 0, green: 0, streak: 0, best: 0, score: 0 };
     if (!t.n) { $("tally").innerHTML = "No spots played yet."; return; }
     var avg = (t.cost / t.n) * 100;
     $("tally").innerHTML =
+      "SCORE &nbsp;" + (t.score || 0) + "<br>" +
       "SPOTS PLAYED &nbsp;" + t.n + "<br>" +
       "BEST CALLS &nbsp;" + t.green + " (" + Math.round(100 * t.green / t.n) + "%)<br>" +
       "AVG WIN% GIVEN UP &nbsp;" + avg.toFixed(1) + "pp<br>" +
@@ -493,12 +514,14 @@
 
     $("cb-held").innerHTML = (c.lineup ? field(c.lineup, "comeback") : "") +
       '<div class="muted" style="font-size:16px;margin-bottom:6px">Dimmed players have already played and are locked.</div>' +
+      // No PROJ column: it was the same giveaway as the drill's, on the same scale as the
+      // bench players you're choosing between.
       '<div class="lbl">STILL TO PLAY</div><table><tr><th>SLOT</th>' +
-      "<th>PLAYER</th><th>PROJ</th></tr>" +
+      "<th>PLAYER</th><th>POS</th></tr>" +
       c.held.map(function (h) {
         return "<tr><td>" + h.slot + "</td><td>" + esc(h.name) +
-          ' <span class="muted">' + (h.pos || "") + " " + (h.nfl || "") + "</span></td><td>" +
-          h.ppg + "</td></tr>";
+          "</td><td>" + '<span class="muted">' + (h.pos || "") + " " +
+          (h.nfl || "") + "</span></td></tr>";
       }).join("") + "</table>";
 
     // show every swap that flips it plus a sample of the rest, then SHUFFLE — the data
@@ -510,8 +533,7 @@
       return '<button class="opt" data-i="' + i + '"><b>START ' + esc(s["in"]) +
         " OVER " + esc(s.out) + "</b>" +
         '<span class="muted">' + s.slot + " &middot; " + esc(s["in"]) + " " +
-        (s.in_pos || "") + " " + (s.in_nfl || "") + " projects " + s.in_ppg +
-        "</span></button>";
+        (s.in_pos || "") + " " + (s.in_nfl || "") + "</span></button>";
     }).join("");
     Array.prototype.forEach.call($("cb-options").querySelectorAll("button"), function (b) {
       b.onclick = function () { answerComeback(+b.dataset.i); };
@@ -527,9 +549,12 @@
       var o = cbShown[+b.dataset.i];
       b.classList.add(o.flips ? "g-green" : "g-red");
       b.disabled = true;
+      var fm = (o.in_log || []).map(function (e) { return "wk" + e.w + " " + e.pts.toFixed(1); }).join(" / ");
       b.innerHTML += '<span class="muted"> &rarr; ' + o.new_total.toFixed(2) + " vs " +
         c.final_against.toFixed(2) + (o.flips ? " — WINS" : " — still short") +
-        " &middot; was worth " + (o.wp * 100).toFixed(1) + "% at the time</span>";
+        " &middot; projected " + o.in_ppg + " &middot; was worth " +
+        (o.wp * 100).toFixed(1) + "% at the time" +
+        (fm ? "<br>" + esc(o["in"]) + " form going in: " + fm : "") + "</span>";
     });
     var delta = (s.wp - c.base_wp) * 100;
     $("cb-verdict").innerHTML = '<div class="verdict g-' + (s.flips ? "green" : "red") + '">' +

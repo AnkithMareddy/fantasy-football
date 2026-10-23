@@ -24,6 +24,7 @@ Writes: state/drills.json
 """
 import json, os, sys
 import winprob as W
+import gamelog as GL
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 N = int(os.environ.get('DRILL_SIMS', '8000'))
@@ -40,7 +41,19 @@ PW = json.load(open('state/player_weeks.json'))
 FINAL_WEEKS = set(json.load(open('state/actuals.json')))
 KO = json.load(open('state/kickoffs.json'))
 P = json.load(open('sleeper/players.json'))
-PPG = W.blended_ppg(W.ppg_index(), PW, KO, P)
+# Per-week baseline: a week-W drill is graded only on scoring from weeks before W.
+# This used to be one season-long PPG for every week, which meant a week-4 call was
+# graded with weeks 5-7 in the number — hindsight, despite the docstring above. It also
+# hid mid-season role changes. See gamelog.ppg_through.
+MIN_PRIOR_WEEKS = 2
+_PPG_CACHE = {}
+
+
+def ppg_for(week):
+    w = int(week)
+    if w not in _PPG_CACHE:
+        _PPG_CACHE[w] = GL.ppg_through(w, PW, KO, P)
+    return _PPG_CACHE[w]
 
 
 def grade(cost):
@@ -52,6 +65,7 @@ def grade(cost):
 
 def pool(week, team):
     """Every rostered player that week whose NFL team actually had a game."""
+    PPG = ppg_for(week)
     wk = PW[str(week)][team]
     games = KO.get(str(week)) or {}
     out = []
@@ -63,6 +77,10 @@ def pool(week, team):
         pos, nfl = p.get('p'), p.get('t')
         if not pos or nfl not in games:
             continue          # bye week or unrostered in Sleeper's map — never a legal call
+        if str(pid) not in PPG:
+            continue          # too few prior games to project from; not a gradeable option
+        if PPG[str(pid)][0] <= 0:
+            continue          # scored nothing in every prior appearance — not a choice
         out.append({'pid': str(pid), 'name': p.get('n', str(pid)), 'pos': pos, 'nfl': nfl,
                     'ppg': PPG.get(str(pid), (0.0, pos))[0],
                     'pts': wk['all_pts'].get(str(pid), 0.0)})
@@ -102,7 +120,9 @@ def build(week, team):
         cands = [r for r in roster.values()
                  if r['pos'] in ELIGIBLE[slot] and (r['pid'] == started['pid']
                                                     or r['pid'] not in starters)]
-        if len(cands) < 2:
+        # Two options is a coin flip dressed as a decision; the user asked for real
+        # choices, so a slot needs at least three legal candidates to be drillable.
+        if len(cands) < 3:
             continue
         scored = []
         for c in cands:
@@ -112,7 +132,10 @@ def build(week, team):
             scored.append({**c, 'wp': wins / N})
         scored.sort(key=lambda x: -x['wp'])
         spread = scored[0]['wp'] - scored[-1]['wp']
-        if not best or spread > best['spread']:
+        # Prefer the slot where the call mattered most, but break near-ties toward the
+        # slot offering more options — a wider choice set is a better puzzle.
+        key = (round(spread, 3), len(scored))
+        if not best or key > (round(best['spread'], 3), len(best['options'])):
             best = {'slot_idx': idx, 'slot': slot, 'spread': spread,
                     'options': scored, 'started': started}
 
@@ -124,10 +147,16 @@ def build(week, team):
     a_tot, b_tot = wk['total'], PW[str(week)][opp]['total']
     lineup = []
     for i, pid in enumerate(starters):
-        r = roster.get(pid)
+        # fall back to the raw player map: a starter can be filtered out of the CANDIDATE
+        # pool (too few prior games, or no points yet) and still has to be drawn on the
+        # field by name, or the formation renders with "?" holes in it.
+        r = roster.get(pid) or {}
+        meta = P.get(str(pid), {})
         lineup.append({'slot': SLOTS[i] if i < len(SLOTS) else 'FLEX',
-                       'name': (r or {}).get('name', '?'), 'pos': (r or {}).get('pos'),
-                       'nfl': (r or {}).get('nfl'), 'contested': i == best['slot_idx']})
+                       'name': r.get('name') or meta.get('n') or '?',
+                       'pos': r.get('pos') or meta.get('p'),
+                       'nfl': r.get('nfl') or meta.get('t'),
+                       'contested': i == best['slot_idx']})
     return {
         'week': int(week), 'team': team, 'opp': opp, 'slot': best['slot'],
         'lineup': lineup,
@@ -136,10 +165,16 @@ def build(week, team):
         'actual_wp': round(actual['wp'], 4),
         'best_pid': top['pid'], 'best_name': top['name'], 'best_wp': round(top['wp'], 4),
         'cost': round(cost, 4), 'grade': grade(cost),
+        # Shuffled, and each option carries recent form instead of being pre-ranked. The
+        # options used to be emitted best-first with the projection printed alongside, so
+        # the whole game was solved by clicking the first button. Consumers must find the
+        # best call via `best_pid`, never by taking options[0]. See gamelog.py.
         'options': [{'pid': o['pid'], 'name': o['name'], 'pos': o['pos'], 'nfl': o['nfl'],
                      'ppg': round(o['ppg'], 1), 'wp': round(o['wp'], 4),
+                     'log': GL.game_log(o['pid'], week, PW, KO, P),
                      'pts': o['pts'], 'grade': grade(top['wp'] - o['wp'])}
-                    for o in best['options']],
+                    for o in GL.deterministic_shuffle(
+                        best['options'], week, team, best['slot'], best['slot_idx'])],
         'result': {'for': a_tot, 'against': b_tot, 'won': a_tot > b_tot},
         'options_caveat': 'no historical weekly injury designations; option set is every '
                           'rostered player whose NFL team played that week',
@@ -150,6 +185,9 @@ if __name__ == '__main__':
     weeks = sys.argv[1:] or sorted(PW, key=int)
     out = {}
     for w in weeks:
+        # a drill needs at least MIN_PRIOR_WEEKS of completed scoring to project from
+        if int(w) <= MIN_PRIOR_WEEKS:
+            continue
         if str(w) not in PW or str(w) not in FINAL_WEEKS:
             continue
         rows = [d for d in (build(w, t) for t in PW[str(w)]) if d]

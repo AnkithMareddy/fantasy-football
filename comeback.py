@@ -23,6 +23,7 @@ Writes: state/comebacks.json
 """
 import json, os
 import winprob as W
+import gamelog as GL
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 N = int(os.environ.get('COMEBACK_SIMS', '6000'))
@@ -133,7 +134,14 @@ def build(week, m):
             })
     if len(swaps) < 3:
         return None          # one or two options isn't a decision, it's a reveal
-    swaps.sort(key=lambda x: (-x['new_total'], -x['wp']))
+    # These used to be sorted by -new_total, which is the points the swapped-in player
+    # ACTUALLY scored — so the first option was the hindsight-best one and the game was
+    # solved by clicking it. Shuffle instead, and let the consumer identify the best swap
+    # by `best_in_pid` / `best_out_pid` below.
+    best_swap = max(swaps, key=lambda x: (x['new_total'], x['wp']))
+    for sw in swaps:
+        sw['in_log'] = GL.game_log(sw['in_pid'], week, PW, KO, P)
+    swaps = GL.deterministic_shuffle(swaps, week, loser, entry)
     base_wp = W.win_prob(lo_locked, lo_todo, wn_locked, wn_todo, N)
     return {
         'week': int(week), 'loser': loser, 'winner': winner,
@@ -150,6 +158,8 @@ def build(week, m):
                     'ppg': s['ppg'], 'locked': s['kick'] not in open_isos} for s in starters],
         'opp_left': len(wn_todo),
         'swaps': swaps,
+        'best_in_pid': best_swap['in_pid'], 'best_out_pid': best_swap['out_pid'],
+        'best_new_total': best_swap['new_total'],
         'winnable': any(s['flips'] for s in swaps),
     }
 
@@ -164,7 +174,9 @@ if __name__ == '__main__':
         for c in rows:
             if c['winnable']:
                 n_win += 1
-                best = c['swaps'][0]
+                best = next(s for s in c['swaps']
+                            if s['in_pid'] == c['best_in_pid']
+                            and s['out_pid'] == c['best_out_pid'])
                 print(f"week {w}: {c['loser']} lost by {c['margin']} — could have flipped it "
                       f"at {c['state_label']} by starting {best['in']} over {best['out']} "
                       f"({best['new_total']} vs {c['final_against']})")
