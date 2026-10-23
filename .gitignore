@@ -47,3 +47,9 @@ site/puzzles.json
 site/teams.json
 state/league_config.json
 .github/workflows/
+
+# unattended run logs and lock
+state/autorefresh.log
+state/autorefresh.stdout.log
+state/autorefresh.stderr.log
+state/autorefresh.lock/
