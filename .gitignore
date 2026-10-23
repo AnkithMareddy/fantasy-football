@@ -52,4 +52,4 @@ state/league_config.json
 state/autorefresh.log
 state/autorefresh.stdout.log
 state/autorefresh.stderr.log
-state/autorefresh.lock/
+state/pipeline.lock/
