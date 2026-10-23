@@ -1,6 +1,16 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-10-22 (4) - the drill is a run now, not an endless list
+- The previous entry made the drill honest; it did not make it a game. It was infinite practice with a counter: no clock, no fail state, no difficulty curve, nothing at stake.
+- RUN mode: ten spots, a 20-second play clock on each, three strikes and you are out, then an end screen with a shareable grade grid and a best-run record. Letting the clock expire is graded as the WORST option on the board, not a neutral skip - in a live week an unset lineup is the worst outcome available, so the game should treat it that way.
+- Difficulty ramp: drill.py now exports `gap` (win% between the best option and the second best) and a tier. A wide gap means one option is plainly right; a narrow one means you have to know the players. Runs open on easy and finish on hard. Spots below 0.5pp are tagged `coinflip` and excluded from runs - when every option grades green there is no call to make and scoring it would be noise. Current mix across 43 drills: 29 easy, 9 medium, 3 hard, 2 coinflip.
+- Scoring: grade points x a combo multiplier, plus a time bonus of 5 points per second left. The time bonus is what makes the clock bite - narrowing it to two and dithering costs real points even when you end up right.
+- PRACTICE mode keeps the old endless, clockless behaviour, because that is the better way to actually learn the league.
+- Verified by playing it in a browser, including the failure paths: a wrong pick grades BIG MISS and takes a strike, an expired clock auto-grades and takes a strike, three strikes ends the run and writes the record. One bug found and fixed that way - the card still read "0/0 runs cleared" after a run ended, because the record was written but the card was never redrawn.
+- Incidental confirmation that the hindsight fix is real: the week-6 Gujju8 RB spot now grades Emanuel Wilson as the best call and notes it was the same call the manager made. Before the fix it graded that call a mistake.
+
+
 ## 2026-10-22 (3) - the arcade games were solvable without thinking, and the drill was quietly using hindsight
 - Reported by the user: "if you just pick the highest ppg swap you win every time". Measured it rather than assuming: the highest-projection option was the single best call in 72 of 72 drills, and graded green in 72 of 72. It was not a game, it was a sorted list.
 - Worse, the options were emitted sorted best-first and the page read options[0] as the answer, so the winning strategy was "click the first button" - no reading required. comeback.py had the same leak and sorted by new_total, which is the points the swapped-in player ACTUALLY scored, so its first option was the hindsight-best one.

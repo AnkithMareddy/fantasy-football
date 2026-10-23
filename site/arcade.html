@@ -92,6 +92,14 @@
   .verdict { font-family: var(--font-display); font-size: 12px; padding: 10px; margin: 10px 0;
              border: var(--pix) solid var(--line-strong); line-height: 1.6; }
   .tally { font-family: var(--font-display); font-size: 10px; color: var(--text-dim); line-height: 1.8; }
+  /* Play clock. Width is driven from JS each tick; the colour flips under 5s so the
+     pressure is visible in peripheral vision, not just readable. */
+  .clockbar { height: 10px; border: var(--pix) solid var(--line-strong); background: #0a0f0a; }
+  .clockbar > div { height: 100%; width: 100%; background: var(--good);
+                    transition: width .2s linear; }
+  .clockbar > div.warn { background: var(--warn); }
+  .clockbar > div.crit { background: var(--bad); }
+  .grid-row { font-family: var(--font-display); font-size: 18px; letter-spacing: 2px; line-height: 1.4; }
   .hide { display: none !important; }
   .note { font-size: 17px; color: var(--text-faint); border-left: var(--pix) solid var(--line-strong);
           padding-left: 10px; margin-top: 10px; }
@@ -150,19 +158,31 @@
   <!-- ============ DRILL ============ -->
   <section id="view-drill" class="hide">
     <div class="panel">
-      <div class="lbl">THE SPOT</div>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="lbl" id="run-hdr">THE SPOT</div>
+        <div class="lbl" id="run-stat"></div>
+      </div>
+      <div id="clockwrap" class="hide" style="margin-top:6px">
+        <div class="clockbar"><div id="clockfill"></div></div>
+      </div>
       <div id="spot" style="margin-top:8px"></div>
       <div id="options" style="margin-top:12px"></div>
       <div id="verdict"></div>
       <div class="row" style="margin-top:10px">
-        <button id="next-drill">NEXT SPOT &#10140;</button>
+        <button id="start-run">&#9654; START RUN</button>
+        <button id="next-drill" class="hide">NEXT SPOT &#10140;</button>
+        <button id="practice">PRACTICE MODE</button>
         <button id="reset-tally">RESET SCORE</button>
       </div>
     </div>
     <div class="panel">
       <div class="lbl">YOUR CARD</div>
       <div class="tally" id="tally" style="margin-top:8px"></div>
-      <div class="note">Every option is simulated from pregame and graded on win chance, not on
+      <div class="note"><b>Run:</b> ten spots, easiest first, a 20-second play clock on each.
+        Three big misses and the run is over. Deciding fast is worth points, so narrowing it
+        down to two and dithering costs you. <b>Practice</b> is the same spots with no clock
+        and no strikes.<br><br>
+        Every option is simulated from pregame and graded on win chance, not on
         what happened &mdash; a right call that busted still grades green. Projections use only
         the weeks played <b>before</b> this one, so nothing here was known after the fact.</div>
     </div>
@@ -306,21 +326,90 @@
     }, 1100);
   }
 
-  /* ---------- DRILL ---------- */
+  /* ---------- DRILL ----------
+     Two modes share one board:
+       RUN      — ten spots, a play clock, three strikes, difficulty ramp, end screen.
+                  This is the game; it can be lost, which is what makes a score mean
+                  something.
+       PRACTICE — the old endless mode, kept because it's the better way to actually
+                  learn the league. No clock, no strikes, no run score.                  */
   var queue = [], qi = 0, answered = false;
+  var RUN_LEN = 10, CLOCK_MS = 20000, MAX_STRIKES = 3;
+  var run = null, clockT = null, clockEnd = 0;
+
+  function allDrills() {
+    var all = [];
+    Object.keys(D.drills).forEach(function (w) {
+      (D.drills[w] || []).forEach(function (d) {
+        if ((d.options || []).length > 1) all.push(d);
+      });
+    });
+    return all;
+  }
+
+  function shuffleArr(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
 
   function buildQueue() {
-    queue = [];
-    Object.keys(D.drills).forEach(function (w) {
-      (D.drills[w] || []).forEach(function (d) { if ((d.options || []).length > 1) queue.push(d); });
-    });
-    for (var i = queue.length - 1; i > 0; i--) {   // shuffle so friends don't get the same order
-      var j = Math.floor(Math.random() * (i + 1)), t = queue[i]; queue[i] = queue[j]; queue[j] = t;
-    }
+    queue = shuffleArr(allDrills());   // practice order: anything, any difficulty
     qi = 0;
   }
 
-  function drill() { return queue[qi % queue.length]; }
+  // Ramp: open on spots where one option is clearly right, finish on spots where the
+  // field is tight. 'coinflip' spots are excluded from runs — when every option grades
+  // green the "call" isn't one, and scoring it would be noise.
+  function buildRun() {
+    var byTier = { easy: [], medium: [], hard: [] };
+    allDrills().forEach(function (d) {
+      if (byTier[d.tier]) byTier[d.tier].push(d);
+    });
+    Object.keys(byTier).forEach(function (k) { shuffleArr(byTier[k]); });
+    var want = [["easy", 4], ["medium", 3], ["hard", 3]], picked = [];
+    want.forEach(function (p) {
+      picked = picked.concat(byTier[p[0]].splice(0, p[1]));
+    });
+    // Short on hard spots early in the season — backfill from whatever's left so a run
+    // is always RUN_LEN long, hardest available last.
+    var spare = shuffleArr(byTier.hard.concat(byTier.medium, byTier.easy));
+    while (picked.length < RUN_LEN && spare.length) picked.push(spare.shift());
+    var order = { easy: 0, medium: 1, hard: 2 };
+    picked.sort(function (a, b) { return (order[a.tier] || 0) - (order[b.tier] || 0); });
+    return picked.slice(0, RUN_LEN);
+  }
+
+  function drill() {
+    if (run) return run.spots[run.i];
+    return queue[qi % queue.length];
+  }
+
+  /* ---------- play clock ---------- */
+  function stopClock() {
+    if (clockT) { clearInterval(clockT); clockT = null; }
+    $("clockwrap").classList.add("hide");
+  }
+
+  function startClock() {
+    stopClock();
+    if (!run) return;                       // practice mode has no clock
+    $("clockwrap").classList.remove("hide");
+    clockEnd = Date.now() + CLOCK_MS;
+    var fill = $("clockfill");
+    fill.className = "";
+    clockT = setInterval(function () {
+      var left = Math.max(0, clockEnd - Date.now()), frac = left / CLOCK_MS;
+      fill.style.width = (frac * 100).toFixed(1) + "%";
+      fill.className = frac < 0.25 ? "crit" : frac < 0.5 ? "warn" : "";
+      if (left <= 0) { stopClock(); answer(-1); }   // -1 = clock expired, no call made
+    }, 100);
+  }
+
+  function secondsLeft() {
+    return run ? Math.max(0, (clockEnd - Date.now()) / 1000) : 0;
+  }
 
   function showDrill() {
     answered = false;
@@ -348,17 +437,43 @@
     Array.prototype.forEach.call($("options").querySelectorAll("button"), function (b) {
       b.onclick = function () { answer(+b.dataset.i); };
     });
+    $("next-drill").classList.add("hide");
+    drawRunHeader();
     drawTally();
+    startClock();
   }
+
+  function drawRunHeader() {
+    if (!run) {
+      $("run-hdr").textContent = "THE SPOT";
+      $("run-stat").textContent = "PRACTICE";
+      return;
+    }
+    var d = drill();
+    $("run-hdr").textContent = "SPOT " + (run.i + 1) + " / " + run.spots.length +
+      (d ? "  ·  " + d.tier.toUpperCase() : "");
+    $("run-stat").textContent = "SCORE " + run.score + "   COMBO x" + comboMult().toFixed(1) +
+      "   " + "✕".repeat(run.strikes) + "·".repeat(MAX_STRIKES - run.strikes);
+  }
+
+  function comboMult() { return run ? 1 + Math.min(run.combo, 10) * 0.1 : 1; }
 
   function answer(i) {
     if (answered) return;
     answered = true;
+    stopClock();
+    var timedOut = (i < 0);
+    var secsLeft = timedOut ? 0 : secondsLeft();
     // options are shuffled on purpose, so the best call has to be looked up by id —
     // options[0] is no longer the answer
-    var d = drill(), picked = d.options[i], best = null;
+    var d = drill(), picked = timedOut ? null : d.options[i], best = null;
     d.options.forEach(function (o) { if (o.pid === d.best_pid) best = o; });
-    if (!best) best = picked;
+    if (!best) best = d.options[0];
+    // Running the clock out is a real failure — in a live week an unset lineup is the
+    // worst outcome available, so it's graded as the worst option on the board.
+    if (!picked) {
+      picked = d.options.reduce(function (w, o) { return o.wp < w.wp ? o : w; }, d.options[0]);
+    }
     var cost = best.wp - picked.wp;
     Array.prototype.forEach.call($("options").querySelectorAll("button"), function (b) {
       var o = d.options[+b.dataset.i];
@@ -369,7 +484,9 @@
         "% to win &middot; projected " + o.ppg + " &middot; actually scored " + o.pts.toFixed(1) +
         (form ? "<br>form going in: " + form : "") + "</span>";
     });
-    var g = picked.grade, word = { green: "BEST CALL", yellow: "CLOSE", orange: "COSTLY", red: "BIG MISS" }[g];
+    var g = timedOut ? "red" : picked.grade;
+    var word = timedOut ? "CLOCK EXPIRED"
+             : { green: "BEST CALL", yellow: "CLOSE", orange: "COSTLY", red: "BIG MISS" }[g];
     var v = '<div class="verdict g-' + g + '">' + word + " &mdash; " +
       (cost <= 0 ? "optimal" : "-" + (cost * 100).toFixed(1) + "pp win chance") + "<br>" +
       "<span style=\"font-size:10px\">Best was " + esc(best.name) + " at " +
@@ -388,29 +505,124 @@
       (d.result.won ? "won" : "lost") + ").</span></div>";
     $("verdict").innerHTML = v;
 
+    // Lifetime card (both modes feed it, so practice still counts toward "how good am I")
     var t = store("smytd_drill") || { n: 0, cost: 0, green: 0, streak: 0, best: 0, score: 0 };
     t.n++; t.cost += cost;
     if (t.score === undefined) t.score = 0;
-    // Points by grade, with a streak multiplier so a run of good calls compounds and a
-    // miss actually stings. Capped at 2x so the tenth green isn't worth ten of the first.
     var pts = { green: 100, yellow: 50, orange: 20, red: 0 }[g] || 0;
-    var mult = 1 + Math.min(t.streak, 10) * 0.1;
-    var earned = Math.round(pts * (g === "red" ? 1 : mult));
-    t.score += earned;
     if (g === "green") { t.green++; t.streak++; t.best = Math.max(t.best, t.streak); } else { t.streak = 0; }
-    store("smytd_drill", t);
-    $("verdict").innerHTML += '<div class="muted" style="margin-top:4px">+' + earned +
-      " pts" + (mult > 1 && g !== "red" ? " (x" + mult.toFixed(1) + " streak)" : "") +
-      " &middot; total " + t.score + "</div>";
+
+    if (run) {
+      // Run scoring: grade points x combo, plus a bonus for deciding fast. The time bonus
+      // is what makes the clock a real pressure rather than just a timer — standing there
+      // narrowing it down to two costs you points even when you end up right.
+      var mult = comboMult();
+      var timeBonus = Math.round(secsLeft * 5) * (g === "red" ? 0 : 1);
+      var earned = Math.round(pts * mult) + timeBonus;
+      run.score += earned;
+      run.results.push({ g: g, timedOut: timedOut });
+      if (g === "green") run.combo++; else run.combo = 0;
+      if (g === "red") run.strikes++;
+      t.score += earned;
+      store("smytd_drill", t);
+      $("verdict").innerHTML += '<div class="muted" style="margin-top:4px">+' + earned +
+        " pts" + (mult > 1 && g !== "red" ? " (combo x" + mult.toFixed(1) + ")" : "") +
+        (timeBonus ? " &middot; +" + timeBonus + " time bonus" : "") +
+        " &middot; run total " + run.score + "</div>";
+      drawRunHeader();
+      var over = run.strikes >= MAX_STRIKES || run.i + 1 >= run.spots.length;
+      if (over) { setTimeout(endRun, 600); }
+      else { $("next-drill").classList.remove("hide"); }
+    } else {
+      var pMult = 1 + Math.min(t.streak, 10) * 0.1;
+      var pEarned = Math.round(pts * (g === "red" ? 1 : pMult));
+      t.score += pEarned;
+      store("smytd_drill", t);
+      $("verdict").innerHTML += '<div class="muted" style="margin-top:4px">+' + pEarned +
+        " pts" + (pMult > 1 && g !== "red" ? " (x" + pMult.toFixed(1) + " streak)" : "") +
+        " &middot; total " + t.score + "</div>";
+      $("next-drill").classList.remove("hide");
+    }
     drawTally();
+  }
+
+  /* ---------- run lifecycle ---------- */
+  function startRun() {
+    var spots = buildRun();
+    if (spots.length < 3) { alert("Not enough drillable spots yet — play practice mode."); return; }
+    run = { spots: spots, i: 0, score: 0, combo: 0, strikes: 0, results: [] };
+    $("start-run").classList.add("hide");
+    $("practice").textContent = "QUIT RUN";
+    showDrill();
+  }
+
+  function endRun() {
+    stopClock();
+    var rec = store("smytd_run") || { best: 0, runs: 0, cleared: 0 };
+    rec.runs++;
+    var cleared = run.strikes < MAX_STRIKES;
+    if (cleared) rec.cleared++;
+    var isBest = run.score > (rec.best || 0);
+    if (isBest) rec.best = run.score;
+    store("smytd_run", rec);
+
+    var emoji = { green: "🟩", yellow: "🟨", orange: "🟧", red: "🟥" };
+    var gridStr = run.results.map(function (r) { return emoji[r.g] || "⬛"; }).join("");
+    var greens = run.results.filter(function (r) { return r.g === "green"; }).length;
+
+    $("clockwrap").classList.add("hide");
+    $("options").innerHTML = "";
+    $("spot").innerHTML =
+      '<div class="verdict g-' + (cleared ? "green" : "red") + '">' +
+      (cleared ? "RUN COMPLETE" : "RUN OVER — THREE STRIKES") +
+      "<br><span style=\"font-size:14px\">" + run.score + " points" +
+      (isBest ? "  ★ NEW BEST" : "  (best " + rec.best + ")") + "</span></div>" +
+      '<div class="grid-row" style="margin-top:8px">' + gridStr + "</div>" +
+      '<div class="muted" style="margin-top:8px">' + greens + " of " + run.results.length +
+      " best calls · " + run.strikes + " strike" + (run.strikes === 1 ? "" : "s") +
+      " · " + rec.cleared + "/" + rec.runs + " runs cleared</div>";
+    $("verdict").innerHTML =
+      '<div class="row" style="margin-top:10px"><button id="again">▶ RUN IT BACK</button>' +
+      '<button id="share-run">COPY RESULT</button></div>';
+    $("again").onclick = startRun;
+    $("share-run").onclick = function () {
+      var txt = "ShowMeYourTDs — The Drill\n" + run.score + " pts · " +
+        greens + "/" + run.results.length + " best calls\n" + gridStr;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(txt).then(function () {
+          $("share-run").textContent = "COPIED";
+        });
+      } else { prompt("Copy:", txt); }
+    };
+    run = null;
+    $("start-run").classList.remove("hide");
+    $("next-drill").classList.add("hide");
+    $("practice").textContent = "PRACTICE MODE";
+    drawRunHeader();
+    drawTally();          // the run record was just written; the card has to catch up
+  }
+
+  function quitRun() {
+    run = null; stopClock();
+    $("start-run").classList.remove("hide");
+    $("practice").textContent = "PRACTICE MODE";
+    buildQueue(); showDrill();
   }
 
   function drawTally() {
     var t = store("smytd_drill") || { n: 0, cost: 0, green: 0, streak: 0, best: 0, score: 0 };
-    if (!t.n) { $("tally").innerHTML = "No spots played yet."; return; }
+    var r = store("smytd_run") || { best: 0, runs: 0, cleared: 0 };
+    if (!t.n) {
+      $("tally").innerHTML = "No spots played yet.<br>Hit START RUN: ten spots, a 20-second " +
+        "play clock, three strikes.";
+      return;
+    }
     var avg = (t.cost / t.n) * 100;
     $("tally").innerHTML =
-      "SCORE &nbsp;" + (t.score || 0) + "<br>" +
+      "BEST RUN &nbsp;" + (r.best || 0) + "<br>" +
+      "RUNS CLEARED &nbsp;" + (r.cleared || 0) + "/" + (r.runs || 0) + "<br>" +
+      "&nbsp;<br>" +
+      "LIFETIME PTS &nbsp;" + (t.score || 0) + "<br>" +
       "SPOTS PLAYED &nbsp;" + t.n + "<br>" +
       "BEST CALLS &nbsp;" + t.green + " (" + Math.round(100 * t.green / t.n) + "%)<br>" +
       "AVG WIN% GIVEN UP &nbsp;" + avg.toFixed(1) + "pp<br>" +
@@ -608,8 +820,19 @@
       $("tab-replay").onclick = function () { tab("replay"); };
       $("tab-drill").onclick = function () { tab("drill"); };
       $("tab-comeback").onclick = function () { tab("comeback"); };
-      $("next-drill").onclick = function () { qi++; showDrill(); };
-      $("reset-tally").onclick = function () { store("smytd_drill", { n: 0, cost: 0, green: 0, streak: 0, best: 0 }); drawTally(); };
+      $("next-drill").onclick = function () {
+        if (run) { run.i++; } else { qi++; }
+        showDrill();
+      };
+      $("start-run").onclick = startRun;
+      $("practice").onclick = function () {
+        if (run) { quitRun(); } else { buildQueue(); showDrill(); }
+      };
+      $("reset-tally").onclick = function () {
+        store("smytd_drill", { n: 0, cost: 0, green: 0, streak: 0, best: 0, score: 0 });
+        store("smytd_run", { best: 0, runs: 0, cleared: 0 });
+        drawTally();
+      };
       $("cb-next").onclick = function () { cbi++; showComeback(); };
       $("cb-reset").onclick = function () { store("smytd_cb", { n: 0, flipped: 0 }); drawCbTally(); };
       document.addEventListener("keydown", function (e) {

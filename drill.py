@@ -144,6 +144,14 @@ def build(week, team):
     top = best['options'][0]
     actual = next(o for o in best['options'] if o['pid'] == best['started']['pid'])
     cost = top['wp'] - actual['wp']
+    # Gap to the SECOND-best option is the honest difficulty signal. A wide gap means one
+    # option is plainly right; a narrow one means the field is tight and you have to
+    # actually know the players. (Below ~0.5pp everything grades green anyway, so those
+    # are filler rather than hard.) The run mode orders spots by this.
+    runner_up = best['options'][1]['wp'] if len(best['options']) > 1 else 0.0
+    gap = top['wp'] - runner_up
+    tier = 'easy' if gap >= 0.05 else 'medium' if gap >= 0.02 else \
+           'hard' if gap >= 0.005 else 'coinflip'
     a_tot, b_tot = wk['total'], PW[str(week)][opp]['total']
     lineup = []
     for i, pid in enumerate(starters):
@@ -165,6 +173,7 @@ def build(week, team):
         'actual_wp': round(actual['wp'], 4),
         'best_pid': top['pid'], 'best_name': top['name'], 'best_wp': round(top['wp'], 4),
         'cost': round(cost, 4), 'grade': grade(cost),
+        'gap': round(gap, 4), 'tier': tier,
         # Shuffled, and each option carries recent form instead of being pre-ranked. The
         # options used to be emitted best-first with the projection printed alongside, so
         # the whole game was solved by clicking the first button. Consumers must find the
