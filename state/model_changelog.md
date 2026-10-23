@@ -1,6 +1,14 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-10-22 (2) - the two refresh paths could have raced; one shared lock now
+- Introducing the launchd job created a problem that didn't exist before: it fires at 8:05 and 23:05, the Claude routine fires a few minutes later after its dispatch jitter, and the routine's prompt tells it to run ./update.sh directly. Two runs part-way through writing the same state/*.json files would have left a torn mix of both.
+- New lock.sh, sourced by update.sh and deploy_site.sh as well as autorefresh.sh. A directory lock (mkdir is atomic; macOS has no flock). Contenders WAIT rather than skip, because a routine that has just written new injury overrides needs a run that reflects them - stale numbers are worse than being a few minutes late.
+- A nested call can't deadlock on a lock its own parent holds: autorefresh.sh takes it once and exports PIPELINE_LOCK_HELD so update.sh and deploy_site.sh skip acquiring. The owner flag is deliberately NOT exported, so a child exiting cannot release a lock its parent still needs.
+- A lock orphaned by a crash or reboot is reclaimed after 60 minutes, so a dead run can't wedge the pipeline until someone deletes it by hand.
+- deploy_site.sh needed care: it already had an EXIT trap for its temp dir, and EXIT traps replace rather than stack, so the lock release had to be added to the existing trap instead of as a second one.
+- Tested rather than assumed, four cases: nested call doesn't deadlock and a child exit doesn't release the parent's lock; an independent second caller waits (30s against a 25s holder) instead of proceeding immediately; a 90-minute-old lock is reclaimed at once; a fresh lock is NOT reclaimed. Then a full autorefresh.sh run, clean, lock released.
+
 ## 2026-10-22 - the daily routine froze for four days; site refresh no longer depends on it
 - Symptom the user reported: no texts, no site updates, routines not running. Site had been stale since 2026-10-18 and the live data.json still said week 6 on 2026-10-22.
 - Cause, exactly: the scheduled Claude routine runs in `default` permission mode, so every Bash command needs a human to click Approve. The Sunday 2026-10-18 11:06 PM run started, read README.md (auto-allowed), then issued its first Bash call at 06:06:40Z and stopped there waiting for approval. Nobody was awake. The run stayed in `running` state for four days, and because the scheduler will not start a run while one is in flight, the next SEVEN scheduled runs (Oct 19 8AM through Oct 22 8AM) never fired at all. One unanswered prompt took the whole pipeline down silently.

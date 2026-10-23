@@ -5,8 +5,15 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Same lock update.sh takes: two concurrent deploys would race on the push to Pages, and
+# one would lose with a non-fast-forward rejection. A no-op when autorefresh.sh called us.
+. ./lock.sh
+acquire_pipeline_lock || exit 1
+
 DEPLOY_DIR="$(mktemp -d)"
-trap 'rm -rf "$DEPLOY_DIR"' EXIT
+# One trap only — EXIT traps replace each other, so the temp-dir cleanup and the lock
+# release have to be set together or the second would silently cancel the first.
+trap 'rm -rf "$DEPLOY_DIR"; release_pipeline_lock' EXIT
 
 cd "$DEPLOY_DIR"
 git init -q

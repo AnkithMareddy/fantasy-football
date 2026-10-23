@@ -2,6 +2,14 @@
 # Refreshes everything the report needs. Output lands in state/latest_*.txt
 set -euo pipefail
 cd "$(dirname "$0")"
+
+# Serialise against the other thing that refreshes this league. autorefresh.sh (launchd)
+# already holds this lock when it calls us, so this is a no-op there; it matters when the
+# Claude routine runs update.sh directly a few minutes after the launchd job started.
+. ./lock.sh
+trap 'release_pipeline_lock' EXIT
+acquire_pipeline_lock || exit 1
+
 python3 refresh.py        | tee state/latest_refresh.txt
 python3 season.py         >     state/latest_season_build.txt
 python3 runseason.py      | tee state/latest_odds.txt
