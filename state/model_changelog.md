@@ -1,6 +1,15 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-10-22 - the daily routine froze for four days; site refresh no longer depends on it
+- Symptom the user reported: no texts, no site updates, routines not running. Site had been stale since 2026-10-18 and the live data.json still said week 6 on 2026-10-22.
+- Cause, exactly: the scheduled Claude routine runs in `default` permission mode, so every Bash command needs a human to click Approve. The Sunday 2026-10-18 11:06 PM run started, read README.md (auto-allowed), then issued its first Bash call at 06:06:40Z and stopped there waiting for approval. Nobody was awake. The run stayed in `running` state for four days, and because the scheduler will not start a run while one is in flight, the next SEVEN scheduled runs (Oct 19 8AM through Oct 22 8AM) never fired at all. One unanswered prompt took the whole pipeline down silently.
+- Not a model defect, and not a data problem: every script was fine. The orchestration was the single point of failure.
+- Fix: new autorefresh.sh runs update.sh then deploy_site.sh with no Claude session involved, so the model run and the site publish can never block on a permission prompt. Sets its own PATH (launchd starts near-empty), takes an mkdir lock so runs cannot stack, logs to state/autorefresh.log, and on failure leaves the previously published site in place rather than pushing a half-built one.
+- Verified, not assumed: ran it under `env -i` with only HOME/USER/TMPDIR set, which is roughly what launchd gives a job. Full pipeline completed and the git push to GitHub Pages succeeded headlessly from the keychain. Live site now serves week 7.
+- What autorefresh.sh deliberately does NOT do: injury research, writing the report, and texting. Those need judgment and, for texting, the user's consent, so they stay with the Claude routine. If the script is the only thing that ever runs, the numbers stay current and no text goes out.
+- Still needs a human once: installing the launchd agent and setting the routine's permission mode are both outside what this session is allowed to do.
+
 ## 2026-10-18 (2) - drill.py and comeback.py were not reproducible (fixed)
 - Found while refactoring: two identical runs of drill.py produced different answers - 16 of 60 drills disagreed on which slot was the key decision or what the call cost. Cause was pool(), which iterates a set() of player ids. Python randomises string hashing per process, so the set's order changed run to run, which changed the order random draws were consumed in, which changed every downstream number. comeback.py shared the code and the bug.
 - Fixed by sorting the id set before iterating. Verified: two consecutive runs of each now differ in 0 rows.
