@@ -746,6 +746,12 @@
     .wordmark { font-size: 20px; line-height: 1.5; }
     /* give every row of the page a consistent 16px gutter */
     .wrap { padding-left: 16px; padding-right: 16px; }
+    /* The recap links are block-level controls, not prose, so they get a real target.
+       The shared rule in nav.js deliberately skips bare <a> so that inline links inside
+       sentences aren't inflated to 44px tall. */
+    .recap-strip a {
+      display: flex; align-items: center; min-height: 44px;
+    }
   }
 
   /* panels in the 2-col rows shouldn't stretch to the tallest neighbour */
