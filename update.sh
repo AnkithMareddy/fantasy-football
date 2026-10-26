@@ -29,6 +29,11 @@ else
   echo "skipping tendencies.py: .venv not found (run: python3 -m venv .venv && .venv/bin/pip install nflreadpy)"
 fi
 
+# Weekly guard: re-test whether a different season baseline would beat the current one.
+# Read-only — it never changes the model, it only reports whether a change is justified
+# yet. See backtest_baseline.py for why this exists.
+python3 backtest_baseline.py | tee state/latest_baseline.txt
+
 python3 build_site.py
 
 # Arcade: per-player weekly history -> replays -> drills -> comeback spots. history.py

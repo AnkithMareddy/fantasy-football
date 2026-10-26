@@ -1,6 +1,16 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-10-25 (3) - the season baseline was NOT changed, and why that was the right call
+- The plan was to replace the season-long baseline with a rolling mean of RotoWire's weekly projections, on the strength of a backtest showing 5.55 MAE against 6.43. That number did not survive contact.
+- First problem, the population. The 5.55/6.43 test only included players who had BOTH a prior-3-week projection mean and a current-week projection - that is, players RotoWire actively covers. The sim runs on every rostered player, including fringe ones. Measured on the full population the ordering reverses.
+- Second problem, and worse: I had been comparing against the wrong thing. season.py does not use a season average of actuals at all - line 54 builds the baseline from a PRESEASON projection board divided by 17, adjusted by researched role overrides. That is what the Monte Carlo actually runs on. Against it, over 590 player-weeks from week 4 on: board 6.270 MAE, rolling projections 6.316 - the projections are WORSE.
+- Where projections do help, measured: only when RotoWire covered the player in all three prior weeks (n=438, rolling 6.03 vs board 6.15). On 1-of-3 or 2-of-3 coverage the board wins clearly (7.68 vs 8.35, 6.70 vs 7.38) - a sparse projection is a noisy one.
+- Best gated version improves MAE 6.270 -> 6.181, which is +1.4% at 0.94 standard errors on a paired test. Not significant. Shipping it would have moved every playoff and title number on the site on the strength of a population artifact, so the season baseline is UNCHANGED.
+- What shipped instead: backtest_baseline.py, wired into update.sh, re-runs this comparison every week on the full population against the real baseline and reports paired significance for four candidates (board, rolling, gated, blend50). A candidate has to clear z > 1.96 before it replaces the season baseline. blend50 currently sits at z = 1.49 with the tightest error of the three, so it is the one most likely to cross first.
+- Unchanged and still correct: RotoWire projections ARE used in startsit.py, where the standing rule allows weekly signals and where they measurably beat the alternative.
+
+
 ## 2026-10-25 (2) - start/sit now uses RotoWire's weekly projection as the expectation
 - What Sleeper's projections actually are: Sleeper does not compute them. Every row comes back stamped `company: rotowire` - they license them. Each is a point estimate of the box score (rush_att, rush_td, rec...) with the half-PPR total derived from it. They are EXPECTATIONS with no variance, confidence interval or distribution attached, which is why they can set the MEAN of a player's weekly distribution but cannot replace the gamma draw - the spread still comes from our own per-position CVs.
 - Two endpoints, only one alive: the weekly one is updated through the week and is what we use; the season-long one is the PRESEASON projection and is never refreshed (every row says gp=18.0, Javonte Williams reads 193.0/18 = 10.72 per game, essentially our own season average). Useless in-season, so there is no RotoWire number available for the weeks the season sim has to project.
