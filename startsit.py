@@ -43,6 +43,18 @@ LINES = {}
 if os.path.exists('state/lines.json'):
     LINES = json.load(open('state/lines.json'))
 
+# RotoWire's projection for THIS week, via Sleeper. Measured over weeks 3-7 it predicts a
+# player's actual score better than our season average at every position (MAE 5.47 vs
+# 6.31), and it is genuinely pre-game, not hindsight — see sleeperproj.py for both checks.
+# This is the current week's start/sit only, which is exactly where weekly signals are
+# allowed to live; the season-long ppg baseline the Monte Carlo sim runs on is untouched.
+PROJ = {}
+try:
+    import sleeperproj
+    PROJ = sleeperproj.for_week(this_week)
+except Exception as e:
+    print(f"(sleeper projections unavailable, falling back to season ppg: {e})")
+
 def game_script_mult(p):
     line = LINES.get(p.get('tm'))
     if not line:
@@ -84,8 +96,17 @@ def value_for(p):
         return 0.0, 'actual'
     if reason:
         return 0.0, reason
-    floor = p['ppg'] * (1 - BUFFER_K * CV.get(p['pos'], 0.5)) * game_script_mult(p)
-    return round(floor, 2), 'proj'
+    # Expectation: RotoWire's number for this week where we have one, else season ppg.
+    # When we use RotoWire we deliberately DROP the Vegas game-script multiplier — their
+    # projection already prices the opponent and the expected game script, so applying
+    # ours on top would adjust for the same matchup twice, in the same direction.
+    rw = PROJ.get(str(p.get('pid') or ''))
+    if rw is not None and rw > 0:
+        mean, tag, script = rw, 'rotowire', 1.0
+    else:
+        mean, tag, script = p['ppg'], 'proj', game_script_mult(p)
+    floor = mean * (1 - BUFFER_K * CV.get(p['pos'], 0.5)) * script
+    return round(floor, 2), tag
 
 rows = []
 for p in roster:
@@ -123,7 +144,11 @@ swap_in = [r for r in rows if r['n'] in optimal_names and r['n'] not in current_
 swap_out_pool = [r for r in rows if r['n'] in current_names and r['n'] not in optimal_names]
 
 lines = []
-lines.append(f"START/SIT (Week {this_week}, conservative floor = ppg minus half the position's weekly variance, {TEAM})")
+n_rw = sum(1 for p in roster if PROJ.get(str(p.get('pid') or '')))
+lines.append(f"START/SIT (Week {this_week}, conservative floor = expectation minus half the "
+             f"position's weekly variance, {TEAM})")
+lines.append(f"Expectation from RotoWire's week-{this_week} projection where available "
+             f"({n_rw} of {len(roster)} rostered), season ppg otherwise.")
 
 if not swap_in:
     lines.append("Current lineup matches the conservative-optimal lineup. No changes recommended.")

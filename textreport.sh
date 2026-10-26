@@ -23,7 +23,17 @@ export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 MODE="${1:-recap}"
 SEND=0
 [ "${2:-}" = "--send" ] && SEND=1
-case "$MODE" in preview|recap) ;; *) echo "usage: $0 preview|recap [--send]" >&2; exit 2 ;; esac
+
+# `auto` lets a single scheduled job pick the right report for the moment it fires:
+# a pre-kickoff preview on Sunday morning, a recap any other time it runs.
+if [ "$MODE" = "auto" ]; then
+    if [ "$(date +%u)" = "7" ] && [ "$(date +%H)" -lt 12 ]; then
+        MODE="preview"
+    else
+        MODE="recap"
+    fi
+fi
+case "$MODE" in preview|recap) ;; *) echo "usage: $0 preview|recap|auto [--send]" >&2; exit 2 ;; esac
 
 LOG=state/textreport.log
 . ./lock.sh

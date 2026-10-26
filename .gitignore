@@ -54,3 +54,4 @@ state/autorefresh.log
 state/autorefresh.stdout.log
 state/autorefresh.stderr.log
 state/pipeline.lock/
+state/sleeper_proj.json
