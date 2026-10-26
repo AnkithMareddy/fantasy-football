@@ -32,18 +32,39 @@ def game_log(pid, week, PW, KO, P, n=3):
     recorded as zero, since a bye tells you nothing about form.
     """
     pid, week = str(pid), int(week)
-    nfl = (P.get(pid) or {}).get('t')
-    out = []
-    for w in sorted((int(k) for k in PW if int(k) < week), reverse=True):
-        if nfl not in (KO.get(str(w)) or {}):
-            continue
+    idx = _log_index(PW, KO, P)
+    return [e for e in idx.get(pid, ()) if e['w'] < week][:n]
+
+
+# One pass over the week archive, cached, instead of a fresh scan per lookup.
+#
+# The first version walked every week x every team x every player on EVERY call, which
+# was fine in drill.py (a few hundred calls) and quietly disastrous in comeback.py, where
+# it sits inside the swap loop — hundreds of full scans. It took update.sh from about
+# four minutes to over twenty, which is long enough to blow the lock timeout of anything
+# queued behind it. Building the index once makes each lookup a slice.
+_LOG_INDEX = None
+
+
+def _log_index(PW, KO, P):
+    global _LOG_INDEX
+    if _LOG_INDEX is not None:
+        return _LOG_INDEX
+    idx = {}
+    for w in sorted((int(k) for k in PW), reverse=True):
+        games = KO.get(str(w)) or {}
         for row in PW[str(w)].values():
-            if pid in row['all_pts']:
-                out.append({'w': w, 'pts': round(row['all_pts'][pid], 1)})
-                break
-        if len(out) >= n:
-            break
-    return out
+            for pid, pts in row['all_pts'].items():
+                pid = str(pid)
+                # a bye is not a zero — it says nothing about form, so it isn't recorded
+                if (P.get(pid) or {}).get('t') not in games:
+                    continue
+                entries = idx.setdefault(pid, [])
+                if entries and entries[-1]['w'] == w:
+                    continue          # same player already recorded for this week
+                entries.append({'w': w, 'pts': round(pts, 1)})
+    _LOG_INDEX = idx
+    return idx
 
 
 def form_line(log):

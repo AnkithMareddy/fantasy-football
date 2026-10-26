@@ -18,7 +18,10 @@
 # numbers — worse than being a few minutes late.
 
 PIPELINE_LOCK="${PIPELINE_LOCK:-state/pipeline.lock}"
-PIPELINE_LOCK_WAIT="${PIPELINE_LOCK_WAIT:-1200}"   # seconds to wait before giving up
+# Long enough to outlast a full pipeline run. 1200s was not: a measured run on
+# 2026-10-22 spent 8m25s in sensitivity.py alone and over 20 minutes in total, so a
+# deploy queued behind it hit the timeout and silently published nothing.
+PIPELINE_LOCK_WAIT="${PIPELINE_LOCK_WAIT:-3600}"   # seconds to wait before giving up
 PIPELINE_LOCK_STALE_MIN="${PIPELINE_LOCK_STALE_MIN:-60}"
 
 acquire_pipeline_lock() {
@@ -29,11 +32,25 @@ acquire_pipeline_lock() {
     local waited=0
 
     until mkdir "$PIPELINE_LOCK" 2>/dev/null; do
-        # A run killed mid-flight (crash, reboot, SIGKILL) leaves its lock behind. Without
-        # this the pipeline would be wedged until someone noticed and deleted it by hand.
+        # Whoever holds it records their pid. If that process is gone the lock is an
+        # orphan and can be taken at once.
+        #
+        # This matters more than the age check below, which was the only reclaim at
+        # first: on 2026-10-22 a run died without releasing, and both the launchd job and
+        # a manual deploy sat waiting behind a lock with no owner. Nothing would have
+        # moved for an HOUR, which would have swallowed the next scheduled run too.
+        local holder
+        holder="$(cat "$PIPELINE_LOCK/pid" 2>/dev/null || true)"
+        if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+            echo "lock.sh: lock holder pid $holder is gone; reclaiming the orphaned lock" >&2
+            rm -rf "$PIPELINE_LOCK" 2>/dev/null
+            continue
+        fi
+        # Belt and braces: a lock with no readable pid (written by an older version, or
+        # the holder died between mkdir and writing it) still ages out.
         if [ -n "$(find "$PIPELINE_LOCK" -maxdepth 0 -mmin "+$PIPELINE_LOCK_STALE_MIN" 2>/dev/null)" ]; then
             echo "lock.sh: $PIPELINE_LOCK is older than ${PIPELINE_LOCK_STALE_MIN}m; assuming a dead run and reclaiming it" >&2
-            rmdir "$PIPELINE_LOCK" 2>/dev/null
+            rm -rf "$PIPELINE_LOCK" 2>/dev/null
             continue
         fi
         if [ "$waited" -ge "$PIPELINE_LOCK_WAIT" ]; then
@@ -45,6 +62,9 @@ acquire_pipeline_lock() {
         waited=$((waited + 10))
     done
 
+    # Record the owner so a contender can tell "in progress" from "died holding it".
+    echo "$$" > "$PIPELINE_LOCK/pid" 2>/dev/null || true
+
     # Exported, so anything we invoke knows the lock is held and skips acquiring it.
     PIPELINE_LOCK_HELD=1
     export PIPELINE_LOCK_HELD
@@ -55,6 +75,7 @@ acquire_pipeline_lock() {
 }
 
 release_pipeline_lock() {
-    [ -n "${PIPELINE_LOCK_OWNER:-}" ] && rmdir "$PIPELINE_LOCK" 2>/dev/null
+    # rm -rf, not rmdir: the lock directory now holds a pid file.
+    [ -n "${PIPELINE_LOCK_OWNER:-}" ] && rm -rf "$PIPELINE_LOCK" 2>/dev/null
     return 0
 }
