@@ -11,6 +11,10 @@ trap 'release_pipeline_lock' EXIT
 acquire_pipeline_lock || exit 1
 
 python3 refresh.py        | tee state/latest_refresh.txt
+# What changed for rostered players since the last run — injury designations, practice
+# participation, IR moves. Deterministic: it diffs Sleeper's own fields, no model needed,
+# so the daily refresh can watch for news without anything that can stall on a prompt.
+python3 newsscan.py       | tee state/latest_news.txt
 python3 season.py         >     state/latest_season_build.txt
 python3 runseason.py      | tee state/latest_odds.txt
 python3 sensitivity.py    | tee state/latest_sensitivity.txt

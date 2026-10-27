@@ -1,6 +1,15 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-10-26 - the daily refresh now watches for news, without a model in the path
+- Gap this closes: the nightly refresh was made reliable by taking the Claude session out of it, but the session was also the only thing watching for injury news. Since it has frozen on a permission prompt twice, nothing was scanning between reports.
+- newsscan.py snapshots every league-rostered player each run and reports the DIFF. It reads fields refresh.py was pulling down and discarding - injury_status, injury_body_part, practice_participation, status, news_updated - and classifies each change as new / worse / better / cleared / status / practice, sorted so downgrades surface first. 178 rostered players tracked; the other ~11k in Sleeper's map are ignored because none of them matter here.
+- Practice participation is the earliest signal available: DNP on Wednesday usually precedes a Friday designation, so it is worth carrying even though it is not a designation itself.
+- Tested by planting one of each event type into a previous snapshot rather than waiting a day to find out: all six detected correctly, with worse-first ordering confirmed.
+- Wired into update.sh (so it runs on both daily refreshes) and into autoreport.py, so a texted report now carries a NEWS SINCE LAST SCAN section. Verified end to end with a planted event.
+- Deliberate limit, stated in the file itself: this is a tripwire, not an analyst. It cannot read a beat writer, weigh whether a coach is being cagey, or judge what a designation means for Sunday. That stays the Claude routine's job - this just guarantees that a status change is never missed entirely.
+
+
 ## 2026-10-25 (3) - the season baseline was NOT changed, and why that was the right call
 - The plan was to replace the season-long baseline with a rolling mean of RotoWire's weekly projections, on the strength of a backtest showing 5.55 MAE against 6.43. That number did not survive contact.
 - First problem, the population. The 5.55/6.43 test only included players who had BOTH a prior-3-week projection mean and a current-week projection - that is, players RotoWire actively covers. The sim runs on every rostered player, including fringe ones. Measured on the full population the ordering reverses.

@@ -124,6 +124,18 @@ def main(mode):
             out.append(f"  {i:>2}. {t:<22} {v['w']}-{v['l']}  {v['pf']:.1f} PF{mark}")
         out.append("")
 
+    # ---- news: what changed since the last scan -------------------------------------
+    nc = load('state/news_changes.json', {}) or {}
+    events = nc.get('events') or []
+    if events:
+        out.append("NEWS SINCE LAST SCAN")
+        for e in events[:12]:
+            out.append(f"  [{e['kind']}] {e['name']} ({e.get('pos')}, {e.get('nfl')}) "
+                       f"- {e['text']}  [{e.get('owner')}]")
+        if len(events) > 12:
+            out.append(f"  ...and {len(events)-12} more")
+        out.append("")
+
     # ---- waivers --------------------------------------------------------------------
     wv = read('state/latest_waivers.txt')
     if wv.strip():
