@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.showmeyourtds.refresh</string>
+  <key>ProgramArguments</key><array><string>/Users/ankithmareddy/fantasy-football/autorefresh.sh</string></array>
+  <key>WorkingDirectory</key><string>/Users/ankithmareddy/fantasy-football</string>
+  <!-- Deliberately NOT 8:05/23:05 any more. The Claude routine runs at 8:06 and 23:06,
+       and a full pipeline takes ~20 minutes, so this job held the lock while the routine
+       sat waiting for it — delaying the Sunday start/sit text and running the same work
+       twice. These times are chosen to never collide with the routine: this is the
+       safety net that keeps the site current if the routine fails, nothing more. -->
+  <key>StartCalendarInterval</key><array>
+    <dict><key>Hour</key><integer>5</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>14</integer><key>Minute</key><integer>0</integer></dict>
+  </array>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/Users/ankithmareddy/fantasy-football/state/autorefresh.stdout.log</string>
+  <key>StandardErrorPath</key><string>/Users/ankithmareddy/fantasy-football/state/autorefresh.stderr.log</string>
+  <key>ProcessType</key><string>Background</string>
+</dict></plist>

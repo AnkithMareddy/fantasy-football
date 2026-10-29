@@ -24,10 +24,20 @@ MODE="${1:-recap}"
 SEND=0
 [ "${2:-}" = "--send" ] && SEND=1
 
-# `auto` lets a single scheduled job pick the right report for the moment it fires:
-# a pre-kickoff preview on Sunday morning, a recap any other time it runs.
+# `auto` lets a single scheduled job pick the right report for the moment it fires. The
+# test is not the day of the week as such, it is whether there is still a kickoff ahead of
+# you that you can act on:
+#   Sunday morning  — the main slate starts at 1 PM ET, so anything before noon is a preview
+#   Thursday        — TNF kicks at 8:15 PM ET, so anything before 8 PM is a preview
+# Any other time, the games it would talk about have already been played: that's a recap.
+# Thursday was missing until 2026-10-28, which meant a Thursday job would have texted a
+# "recap" of a game that had not kicked off yet.
 if [ "$MODE" = "auto" ]; then
-    if [ "$(date +%u)" = "7" ] && [ "$(date +%H)" -lt 12 ]; then
+    DOW="$(date +%u)"           # 1 = Monday ... 7 = Sunday
+    HOUR="$(date +%H)"          # zero-padded, so strip the pad before comparing
+    HOUR="${HOUR#0}"; HOUR="${HOUR:-0}"
+    if { [ "$DOW" = "7" ] && [ "$HOUR" -lt 12 ]; } || \
+       { [ "$DOW" = "4" ] && [ "$HOUR" -lt 20 ]; }; then
         MODE="preview"
     else
         MODE="recap"
