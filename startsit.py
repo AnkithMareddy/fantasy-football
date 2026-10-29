@@ -150,10 +150,16 @@ lines.append(f"START/SIT (Week {this_week}, conservative floor = expectation min
 lines.append(f"Expectation from RotoWire's week-{this_week} projection where available "
              f"({n_rw} of {len(roster)} rostered), season ppg otherwise.")
 
-if not swap_in:
-    lines.append("Current lineup matches the conservative-optimal lineup. No changes recommended.")
-else:
+n_swaps = 0
+if swap_in:
     for inp in sorted(swap_in, key=lambda r: -r['val']):
+        # A player who cannot play this week is not an upgrade on anybody. Without this
+        # guard, a week where the bench is entirely on bye produces "start Shough (0.0)
+        # over Stroud (0.0) — +0.0 pt floor edge": advice-shaped noise sitting exactly
+        # where the real finding belongs, which is that the lineup has a hole in it.
+        # Those weeks are handled by the LINEUP HOLES section instead.
+        if inp['tag'] not in ('proj', 'rotowire', 'actual'):
+            continue
         # best matching bench-out candidate: prefer same position, else any unlocked current starter
         cands = [o for o in swap_out_pool if o['pos'] == inp['pos'] and o['tag'] != 'actual']
         if not cands:
@@ -161,18 +167,103 @@ else:
         if not cands:
             continue  # everyone who'd be benched already played — can't change it now
         out_p = min(cands, key=lambda r: r['val'])
-        swap_out_pool.remove(out_p)
         gap = inp['val'] - out_p['val']
+        if gap < 0.1:
+            continue          # a rounding-error edge is not a reason to touch the lineup
+        swap_out_pool.remove(out_p)
         in_tag = '' if inp['tag'] == 'proj' else f" [{inp['tag']}]"
         out_tag = '' if out_p['tag'] == 'proj' else f" [{out_p['tag']}]"
         lines.append(f"Start {inp['n']} ({inp['pos']}, {inp['val']:.1f} floor{in_tag}) over "
                      f"{out_p['n']} ({out_p['pos']}, {out_p['val']:.1f} floor{out_tag}) — "
                      f"+{gap:.1f} pt floor edge.")
+        n_swaps += 1
+
+if not swap_in:
+    lines.append("Current lineup matches the conservative-optimal lineup. No changes recommended.")
+elif not n_swaps:
+    # The optimal lineup differs on paper, but every difference was a player who can't
+    # play or an edge inside rounding error. Say that, rather than reporting a fake swap.
+    lines.append("No swap worth making from the bench — every candidate is either out this "
+                 "week or inside rounding error of the man already starting.")
 
 locked_conflicts = [r for r in swap_out_pool if r['n'] not in optimal_names and r['tag'] == 'actual']
 if locked_conflicts:
     lines.append("(Already locked in and already played, so no change possible there this week: "
                  + ", ".join(f"{r['n']} ({r['val']:.1f} actual)" for r in locked_conflicts) + ".)")
+
+# ---- holes: a starter who cannot play, and nobody on the bench who can -------------
+# This is the section week 8 needed and didn't have. A starter floored to 0 isn't a
+# start/sit question, it's a roster question, and when the bench is on bye too the answer
+# is not on the roster at all — so look outside it.
+AVAILABLE_TAGS = ('proj', 'rotowire', 'actual')
+holes = [r for r in rows if r['starting'] and r['tag'] not in AVAILABLE_TAGS]
+# Sidecar for autoreport.py: the hole, and the best pickup for it. Written as data rather
+# than left for something downstream to scrape back out of the printed text.
+hole_recs = []
+if holes:
+    lines.append("")
+    lines.append("LINEUP HOLES — starters who will score 0 unless you act:")
+    bench_ok = [r for r in rows if not r['starting'] and r['tag'] in AVAILABLE_TAGS]
+    try:
+        import freeagents
+        FA_OK = True
+    except Exception as e:
+        FA_OK, _fa_err = False, e
+    for h in sorted(holes, key=lambda r: -r['ppg']):
+        lines.append(f"  {h['n']} ({h['pos']}, {h['tm']}) — {h['tag']}. "
+                     f"Normally {h['ppg']:.1f} ppg, so this is roughly what it costs you.")
+        # FLEX means an RB/WR/TE hole can be covered by any of the three; QB/K/DEF cannot.
+        group = ['RB', 'WR', 'TE'] if h['pos'] in ('RB', 'WR', 'TE') else [h['pos']]
+        cover = sorted([b for b in bench_ok if b['pos'] in group], key=lambda r: -r['val'])
+        if cover:
+            c = cover[0]
+            lines.append(f"      -> bench cover: {c['n']} ({c['pos']}, {c['val']:.1f} floor). Start him.")
+            continue
+        if not FA_OK:
+            lines.append(f"      -> no bench cover (free-agent list unavailable: {_fa_err})")
+            continue
+        fas = freeagents.top(h['pos'], n=3, week=this_week)
+        if not fas:
+            lines.append("      -> no bench cover, and nothing projectable on the wire either.")
+        else:
+            lines.append("      -> NO bench cover. Best available on the wire this week:")
+            hole_recs.append({'out': h['n'], 'pos': h['pos'], 'lost_ppg': round(h['ppg'], 1),
+                              'best': fas[0]['n'], 'best_tm': fas[0]['tm'],
+                              'best_proj': fas[0]['proj']})
+            for f in fas:
+                # Say why, not just how much. For a QB the shape that matters is a high
+                # total with his team trailing (volume); for a defence it is the opposite,
+                # a favourite in a low-scoring game.
+                ln = LINES.get(f['tm']) or {}
+                why = ''
+                if ln.get('spread') is not None:
+                    sp = ln['spread']
+                    why = (f"  ({f['tm']} {'-' if sp < 0 else '+'}{abs(sp):g} vs "
+                           f"{ln.get('opp')}, O/U {ln.get('total')})")
+                lines.append(f"           {f['n']:<24} {f['tm']:<4} {f['proj']:>5.1f} proj{why}")
+    faab = None
+    try:
+        faab = json.load(open('state/waivers.json')).get('faab_left', {}).get(TEAM)
+    except Exception:
+        pass
+    if faab is not None:
+        lines.append(f"  (You have ${faab} of FAAB left.)")
+    # Adding anybody means dropping somebody, and the cheapest drop is rarely obvious in a
+    # week when half the roster reads 0.0 because it is on bye. Rank by season ppg — what
+    # the player is worth the rest of the way — not by this week's floor.
+    need_adds = sum(1 for h in holes
+                    if not [b for b in bench_ok
+                            if b['pos'] in (['RB', 'WR', 'TE'] if h['pos'] in ('RB', 'WR', 'TE')
+                                            else [h['pos']])])
+    if need_adds:
+        droppable = sorted((r for r in rows if not r['starting']), key=lambda r: r['ppg'])[:3]
+        if droppable:
+            lines.append(f"  Room for {need_adds} pickup{'s' if need_adds > 1 else ''} — "
+                         "cheapest to drop, by season ppg (not this week's bye-week 0):")
+            for d in droppable:
+                lines.append(f"      {d['n']:<22} {d['pos']:<4} {d['ppg']:>5.1f} ppg")
+        lines.append("  A defence you are streaming anyway is usually a cheaper drop than "
+                     "any of these.")
 
 lines.append("")
 lines.append("Full bench, ranked by floor:")
@@ -202,3 +293,11 @@ for r in rows:
 lines += starter_line_notes if starter_line_notes else ["  None."]
 
 print("\n".join(lines))
+
+# Data sidecar: what the lineup is missing and the best pickup for each gap. autoreport.py
+# turns this into "what the moves are worth" rather than re-parsing the text above.
+try:
+    json.dump({'week': this_week, 'holes': hole_recs},
+              open('state/startsit_holes.json', 'w'), indent=1)
+except Exception:
+    pass          # the printed report is the deliverable; the sidecar is a convenience

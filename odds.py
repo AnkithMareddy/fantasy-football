@@ -61,8 +61,14 @@ for e in data.get('events', []):
         continue
     home = next(c for c in comp['competitors'] if c['homeAway'] == 'home')
     away = next(c for c in comp['competitors'] if c['homeAway'] == 'away')
-    home_ab = home['team']['abbreviation']
-    away_ab = away['team']['abbreviation']
+    # ESPN calls Washington WSH, Sleeper calls them WAS, and every lookup against this
+    # file is keyed the Sleeper way. Without this, state/lines.json carried a WSH entry
+    # nobody could find: LINES.get('WAS') returned None all season, so Washington players
+    # were the one team silently getting no game-script adjustment. refresh.py normalises
+    # the same way (see its kickoff parsing) — keep the two in step.
+    FIX = {'WSH': 'WAS'}
+    home_ab = FIX.get(home['team']['abbreviation'], home['team']['abbreviation'])
+    away_ab = FIX.get(away['team']['abbreviation'], away['team']['abbreviation'])
     kickoff = e.get('date')   # ISO 8601 UTC, e.g. "2026-09-18T00:15Z"
     home_spread, away_spread = spread, -spread
     home_implied = (total + (-home_spread)) / 2

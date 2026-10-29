@@ -57,3 +57,4 @@ state/pipeline.lock/
 state/sleeper_proj.json
 state/news_snapshot.json
 state/news_changes.json
+state/startsit_holes.json

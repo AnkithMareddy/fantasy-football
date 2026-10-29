@@ -79,8 +79,23 @@ def main(mode):
                 P = load('sleeper/players.json', {}) or {}
                 ppg = W.blended_ppg(W.ppg_index(), PW, KO, P)
                 todo = lambda rows: [(ppg.get(str(r['pid']), (0.0, r['pos']))[0], r['pos']) for r in rows]
-                wp = W.win_prob(mine, todo(left_me), theirs, todo(left_opp), n=20000)
+                mine_todo, opp_todo = todo(left_me), todo(left_opp)
+                wp = W.win_prob(mine, mine_todo, theirs, opp_todo, n=20000)
                 out.append(f"Win probability: {wp*100:.1f}%")
+                # A bye-week hole shows up here as a slot contributing nothing, which makes
+                # the number look like a verdict on the roster when it is really a verdict
+                # on an unmade transaction. Price the fix so the gap is attributable.
+                recs = (load('state/startsit_holes.json', {}) or {}).get('holes') or []
+                if mode == 'preview' and recs:
+                    filled = mine_todo + [(r['best_proj'], r['pos']) for r in recs]
+                    wp2 = W.win_prob(mine, filled, theirs, opp_todo, n=20000)
+                    if wp2 - wp >= 0.02:
+                        names = ", ".join(f"{r['best']} ({r['pos']})" for r in recs)
+                        n = len(recs)
+                        out.append(f"Win probability if you fill the empty slot"
+                                   f"{'s' if n > 1 else ''} ({names}): {wp2*100:.1f}% — a "
+                                   f"{(wp2-wp)*100:+.0f} point swing from "
+                                   f"{n} free-agent add{'s' if n > 1 else ''}.")
             except Exception as e:
                 out.append(f"(win probability unavailable: {e})")
         else:
