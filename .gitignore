@@ -51,6 +51,9 @@ state/league_config.json
 
 # unattended run logs and lock
 state/autorefresh.log
+state/textreport.log
+state/textreport.stdout.log
+state/textreport.stderr.log
 state/autorefresh.stdout.log
 state/autorefresh.stderr.log
 state/pipeline.lock/
