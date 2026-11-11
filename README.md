@@ -1,31 +1,81 @@
-# ShowMeYourTDs fantasy football
+# ShowMeYourTDs
 
-Season model and post-slate reports for my Sleeper league: ShowMeYourTDs, 12 teams, half PPR, redraft. Sleeper league ID `1385346462094741504`, my team is `uaintgotjuicehoeido`.
+A fantasy football model for one 12-team Sleeper league that grew into three
+things: a draft-night assistant, a nightly in-season advisor that texts itself,
+and an arcade my league can actually play.
 
-## How it got here
+**Live dashboard:** https://ankithmareddy.github.io/fantasy-football-hub/
 
-It began as a draft-night assistant for one league and became a nightly
-in-season model. The short version: a scoring-rules read that made rushing
-quarterbacks and the tight-end window the whole draft strategy, then a
-post-draft rebuild that caught four real defects (frozen rosters, IR players
-counted healthy, unrealistically narrow weekly variance, lineups picked in
-hindsight), then start/sit, market data, a public dashboard, a self-audit, and
-finally four scheduled tasks that run it without being asked.
+It has run unattended, every day, since September — and the interesting part of
+this repo is not the simulation. It is the record of being wrong. Nearly every
+change here came from catching a defect, and the ones that mattered most were
+all cases where the model looked confident and was quietly cheating.
 
-Full story, with what each change did to the numbers: **[docs/EVOLUTION.md](docs/EVOLUTION.md)**.
-Earlier versions of the simulator are frozen in [`archive/prototype-sept-2026/`](archive/prototype-sept-2026).
+## The three acts
+
+**1. Draft strategy (Sept 3-6).** The league's exact scoring, not generic
+advice, set the plan. Under 0.5 PPR with 4-point passing TDs and -2 per
+interception, a rushing yard is worth **2.5x** a passing yard — which makes a
+running quarterback the only real separator at the position. Five years of
+league history (840 picks) became per-manager draft tendencies, which is what
+called the tight-end window at pick 21 instead of 28.
+
+**2. Live advice (Sept 10 onward).** A 10,000-season Monte Carlo for playoff and
+title odds, a conservative-floor start/sit call, Vegas game-script context, real
+play-by-play tendencies from nflverse, waivers and FAAB for all 12 teams — texted
+after every slate and published to a public dashboard.
+
+**3. Games (Oct onward).** Scrubbable matchup replays with a live win% curve,
+a decision drill graded on win-chance rather than outcome, comeback mode, daily
+puzzles in two separate tracks, and an original play-calling football game
+driven by the league's real rosters.
+
+**The full story, with what each change did to the numbers, is in
+[docs/EVOLUTION.md](docs/EVOLUTION.md)** — including the three things that went
+wrong badly enough to be worth writing down:
+
+- The model was **picking lineups in hindsight**, worth +3-4 points a week. Our
+  own playoff odds fell 75% → 64% → 61% as that and three sibling defects were
+  fixed. None of it was new information about football.
+- The decision drill was **100% solvable** by one rule, and then, after that was
+  fixed, was found to be **grading week-4 calls with week-17 knowledge** under a
+  banner reading "No hindsight."
+- A projection source nearly replaced the season baseline on the strength of a
+  backtest that had been **measured on the wrong population**. It was 1.4%
+  better at 0.94 standard errors — noise. `backtest_baseline.py` now re-runs
+  that comparison weekly and reports paired significance, so the next candidate
+  has to clear a real bar.
 
 ## What it does
 
-- Pulls live rosters, standings, results, and the in-progress week from the Sleeper and ESPN public APIs.
-- Simulates the rest of the season 10,000 times:
-  - completed weeks use real scores
-  - the current week uses points already scored
-  - injured players return on researched dates, with a harsh injury model on top
-- Produces playoff, bye, #1 seed, finals, and title odds for all 12 teams.
-- Pulls real NFL play-by-play (nflverse) for team tendencies — EPA/play, pass rate, xpass residual — independent of fantasy scoring.
-- Texts a written report through Messages after each NFL slate.
-- Publishes a public dashboard (standings, matchups, tendencies, market watch, highlights) to a real site, refreshed automatically each run: **https://ankithmareddy.github.io/fantasy-football-hub/**
+- Pulls live rosters, standings, results and the in-progress week from the
+  Sleeper and ESPN public APIs.
+- Simulates the rest of the season 10,000 times: completed weeks use real
+  scores, the current week uses points already scored, injured players return on
+  researched dates.
+- Produces playoff, bye, #1 seed, finals and title odds for all 12 teams.
+- Calls start/sit on a conservative floor — and when a starter cannot play and
+  the bench cannot cover him, looks **off the roster** at the wire and prices
+  what the pickup is worth in win probability.
+- Scans every rostered player for injury and practice-participation changes on
+  each refresh, and reports the diff.
+- Texts a written report through Messages after each slate.
+- Publishes the dashboard and the arcade, refreshed automatically twice a day.
+
+## The arcade
+
+Two tracks, because they reward different knowledge:
+
+| Track | Needs | Games |
+|---|---|---|
+| **NFL knowledge** | Any football fan | Guess the Player, Guess the NFL Game |
+| **League knowledge** | Only someone in *this* league | Guess the Matchup, Guess the Manager, Guess the Lineup |
+
+Plus three built on real league history: **Replay** (scrub any matchup with a
+win% curve), **The Drill** (a real lineup call, every alternative simulated and
+graded ex-ante), and **Comeback** (rewind a lost matchup to the last moment a
+legal swap could still have flipped it). **Gridiron** is an original
+play-calling game using each manager's real squad.
 
 ## Running it
 
@@ -77,22 +127,66 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `state/role_overrides.json` | evidenced role changes, maintained by the report run |
 | `state/model_changelog.md` | every model change; read before explaining an odds move |
 | `recipients.txt` | phone numbers for the text report (gitignored) |
+| `update.sh` | runs the whole pipeline in order; everything downstream reads its output |
+| `autorefresh.sh` | what launchd calls — `update.sh` then `deploy_site.sh`, with an explicit `PATH` because launchd starts with a near-empty environment |
+| `textreport.sh` | builds a report and optionally texts it; refuses to send if `update.sh` failed or the report came out under 200 bytes |
+| `autoreport.py` | writes the report from pipeline output alone — no model, no prompts, so it cannot be blocked by a permission request |
+| `lock.sh` | one pipeline at a time; a PID-bearing lock *directory* (`mkdir` is atomic, macOS has no `flock`) so a dead holder's lock can be reclaimed |
+| `send_text.sh` | sends a report file through macOS Messages to each number in `recipients.txt`, masking numbers to the last four digits in its log |
+| `newsscan.py` | diffs every rostered player's injury status, body part, practice participation and roster status against the last run — a tripwire, not an analyst |
+| `sleeperproj.py` | Sleeper's weekly projections (licensed from RotoWire) with the measurement showing they beat our season average, used in start/sit only |
+| `freeagents.py` | who is actually available to pick up this week, by subtraction (the full player map minus every league roster), ranked by projection |
+| `backtest_baseline.py` | weekly guard: re-tests whether a different season baseline would beat the current one, reporting paired significance rather than a bare MAE |
+| `gamelog.py` | per-player game log with `ppg_through(week)` — expectations built from prior weeks only, which is what stopped the drill grading calls in hindsight |
+| `nflcolors.py` | team colours for the site and the arcade |
+| `launchd/` | reference copies of both LaunchAgents, the reload commands, and the Weekday-convention trap |
 | `docs/EVOLUTION.md` | how the project evolved from draft tool to in-season assistant |
 | `archive/prototype-sept-2026/` | frozen earlier versions of the simulator and the draft board (not imported by anything) |
 
 ## Schedule
 
-**Consolidating:** [docs/SCHEDULED_TASK.md](docs/SCHEDULED_TASK.md) has a single task prompt that replaces all of the tasks below. Until it's set up, the four tasks below are what run.
+Two **launchd** agents do the work that must not fail, with no model in the path
+and nothing that can stall on a prompt. See [launchd/README.md](launchd/README.md).
 
-Two Claude scheduled tasks:
+| Agent | Runs | Does |
+|---|---|---|
+| `com.showmeyourtds.refresh` | daily 05:00, 14:00 | `autorefresh.sh` — full pipeline, then deploy. No text. |
+| `com.showmeyourtds.text` | Sun 08:00, Sun 22:30, Mon 22:30, Thu 17:30 | `textreport.sh auto --send` |
 
-- **Fantasy report text (ShowMeYourTDs)** — two scheduled tasks sharing the same per-manager report logic, four runs a week: Sunday 8 AM (before that day's early kickoffs — START/SIT leads, the one that actually matters for lineup decisions), then Thursday, Sunday, and Monday at 11 PM (right after each slate finishes — mostly recap, since that week's roster is already locked or played by then). Every run researches injuries and news, updates the override files, re-runs the model, lists league-wide waiver pickups and FAAB for all 12 teams, includes a start/sit call, fact-checks, then texts the user and their roommate/co-manager.
-- **Fantasy league recap (forward to group chat)** — Tuesday at 9:30 AM, after Monday Night Football wraps up. Re-runs the model (no new research), deploys the public site, and writes a league-wide recap — all 6 matchups, standings, top performers, and updated playoff/title odds for all 12 teams — plus a draft X thread. Both are saved as local files for the user to copy and send themselves; this task never texts or posts anything automatically. Texting is reserved for the per-manager report above.
-- **Fantasy nightly site refresh** — Tuesday, Wednesday, Friday, and Saturday at 11 PM — the four nights none of the above tasks run. Light touch: checks for real injury/status news (especially any injury_overrides.json entry whose return_week has arrived), updates the override files if warranted, re-runs the model, and deploys the site. No text, no report file, and no notification at all unless something actually changed. Between this and the other three tasks, the site gets checked for new news every night of the week.
+`auto` picks preview vs recap by whether a kickoff is still ahead of you: Sunday
+before noon and Thursday before 8 PM are previews, everything else is a recap.
 
-Both need the Claude app open and the Mac awake. `sudo pmset -a disablesleep 1` and `sudo pmset -a displaysleep 0` keep it from idle-sleeping, but a MacBook with the lid closed and no external display still force-sleeps regardless — leave the lid open (or attach an external display while on power) for these to fire reliably.
+One **Claude scheduled task** still runs on top of this and writes the better
+report when it can — it researches injuries and news, and explains what a result
+means, which `autoreport.py` cannot. It is the ceiling; the launchd pair is the
+floor. The floor exists because that task froze on a permission prompt three
+times (Oct 18, 23, 26), and a frozen run blocks every run queued behind it.
+See [docs/SCHEDULED_TASK.md](docs/SCHEDULED_TASK.md).
 
-The Sunday/Tuesday/Friday task also redeploys the public site (`deploy_site.sh`) as its last step. Live at https://ankithmareddy.github.io/fantasy-football-hub/, source at [AnkithMareddy/fantasy-football-hub](https://github.com/AnkithMareddy/fantasy-football-hub) (public — built site only, no model code or rosters beyond what's already shown on the page).
+Neither agent runs while the Mac is asleep, and launchd does not catch up a
+missed calendar run on wake.
+
+## Running it on another league
+
+`league.py` derives the league id, team keys, starting slots, scoring and the
+full schedule from Sleeper, so most of the pipeline is not hard-wired to this
+league:
+
+```bash
+LEAGUE_ID=<your sleeper league id> ./update.sh
+```
+
+What *is* specific to this league and would need changing: `TEAM` in
+`startsit.py`, the preseason board in `board.json`, and the researched override
+files in `state/`. The texting path needs `recipients.txt` (gitignored) and
+macOS Messages.
+
+## What is deliberately not in this repo
+
+`recipients.txt` (phone numbers), `reports/` (full rosters and league members'
+names) and the `state/*.log` run logs are gitignored and stay local. No phone
+number, API key, token or `.env` file has ever been committed — the history has
+been checked for all four.
 
 ## Setup: tendencies.py
 

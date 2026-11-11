@@ -151,8 +151,15 @@ lines.append(f"Expectation from RotoWire's week-{this_week} projection where ava
              f"({n_rw} of {len(roster)} rostered), season ppg otherwise.")
 
 n_swaps = 0
+FLEX_POS = ('RB', 'WR', 'TE')
 if swap_in:
-    for inp in sorted(swap_in, key=lambda r: -r['val']):
+    # Two passes: same-position swaps first, then FLEX swaps (RB/WR/TE for each other).
+    # QB/K/DEF only ever swap like for like. Without the passes, an RB could be paired
+    # against the DEF slot once the same-position starters were used up (Week 9 bug).
+    ordered = sorted(swap_in, key=lambda r: -r['val'])
+    pending = []
+    for pass_no in (1, 2):
+      for inp in (ordered if pass_no == 1 else pending):
         # A player who cannot play this week is not an upgrade on anybody. Without this
         # guard, a week where the bench is entirely on bye produces "start Shough (0.0)
         # over Stroud (0.0) — +0.0 pt floor edge": advice-shaped noise sitting exactly
@@ -160,10 +167,15 @@ if swap_in:
         # Those weeks are handled by the LINEUP HOLES section instead.
         if inp['tag'] not in ('proj', 'rotowire', 'actual'):
             continue
-        # best matching bench-out candidate: prefer same position, else any unlocked current starter
-        cands = [o for o in swap_out_pool if o['pos'] == inp['pos'] and o['tag'] != 'actual']
-        if not cands:
-            cands = [o for o in swap_out_pool if o['tag'] != 'actual']
+        if pass_no == 1:
+            cands = [o for o in swap_out_pool if o['pos'] == inp['pos'] and o['tag'] != 'actual']
+            if not cands:
+                pending.append(inp)
+                continue
+        else:
+            if inp['pos'] not in FLEX_POS:
+                continue
+            cands = [o for o in swap_out_pool if o['pos'] in FLEX_POS and o['tag'] != 'actual']
         if not cands:
             continue  # everyone who'd be benched already played — can't change it now
         out_p = min(cands, key=lambda r: r['val'])

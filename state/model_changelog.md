@@ -1,6 +1,17 @@
 # Model changelog
 Read this before explaining any change in odds between reports. Newest first.
 
+## 2026-11-02 (Mon night) - start/sit slot-pairing fix, override updates
+- startsit.py bug: when no same-position starter was left to bench, the fallback paired a bench player with ANY unlocked starter, so Week 9 printed "Start Cam Skattebo (RB) over Washington Commanders (DEF)". The optimal lineup was right; only the printed pairing was wrong. Pairing now runs in two passes: same position first, then FLEX (RB/WR/TE for each other only). QB/K/DEF swap like for like only. Week 9 now reads: CMC over Dobbins, Olave over Metcalf (bye), HOU DEF over WAS DEF, Skattebo over Kelce at FLEX. No effect on the season sim or any odds.
+- Overrides: Jadarian Price removed (played Week 8 MNF, 4.7 pts). Breece Hall stays Week 9, now backed by Rapoport's "good to go". A.J. Brown, Travis Etienne and Jordyn Tyson keep Week 9 with refreshed notes; nothing settled yet. No return week changed, so the odds move only from Monday's results.
+
+## 2026-11-01 - injury override cleanup (data, not code)
+- Josh Jacobs (raymondfeltons) was still listed as suspended until Week 12. The NFL took him off the Commissioner's Exempt List in October and he has played Weeks 7-8 (20.2 pts in Week 8). Entry removed, so the sim now counts him as available from Week 9. This lifts raymondfeltons' odds; it's a data correction, not a talent change.
+- How an override works: when a player has one, runseason.py uses it and skips the live Sleeper status entirely. So an entry whose return week had already passed was marking players healthy even though Sleeper had them Out or IR. A.J. Brown, DeVonta Smith, David Montgomery, Kyle Monangai, and Breece Hall were all affected. Each one now has a researched Week 9/10 estimate. Code unchanged. Worth a guard later: ignore an override whose return_week <= current week when Sleeper still says Out/IR.
+- Added Lamar Jackson (thumb surgery, IR, back Week 13 at the earliest) and RJ Harvey (short-term IR, knee, back Week 13 at the earliest).
+- Net effect: raymondfeltons went 34% -> 11% playoffs, even with Jacobs back. Lamar is his only QB, and runseason.py's lineup() has no replacement-level fill, so his QB slot scores 0 for Weeks 9-12. In reality he will add a QB off waivers, so 11% is too low. Code not changed on this unattended run; flagged for a fix.
+- Deleted the entries for players who have played since their entry was written: Caleb Williams, Charbonnet, Saquon Barkley, Diggs, Lane, Coleman, Jordan Mason, Caleb Douglas, Marvin Harrison, and Christian Kirk (a free agent).
+
 ## 2026-10-28 - start/sit now looks off the roster when the answer isn't on it
 - What week 8 exposed: 7 of this team's 14 players are on bye at once, including the starting QB (Stroud) and the starting DEF (Houston), and all 5 bench players are on bye too. The next-worst team in the league has 3 on bye. startsit.py correctly floored all of them to 0 - and then had nothing useful to say, because it only ever compared the roster against itself. Its actual advice was "Start Tyler Shough (0.0) over C.J. Stroud (0.0) - +0.0 pt floor edge": advice-shaped noise sitting exactly where the real finding belonged.
 - Two zero-value swaps are now suppressed: a player who cannot play is never reported as an upgrade on anyone, and a sub-0.1 pt edge is not a reason to touch a lineup. An empty swap list now says which of the two it is - lineup already optimal, versus every candidate out or inside rounding error.
