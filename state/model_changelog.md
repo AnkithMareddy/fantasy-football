@@ -205,3 +205,24 @@ Read this before explaining any change in odds between reports. Newest first.
 - The in-progress week uses real points already scored, plus the best lineup from players who haven't played.
 - Simulations raised from 4,000 to 10,000 seasons.
 - Net for uaintgotjuicehoeido: 4th / 64% playoffs / 10% title in the Thu 11 PM text (old model) became 3rd / 61% / 11% (new model). That change came from these model fixes, not sampling noise.
+
+## 2026-11-11 — newsscan.py severity comparison was case-blind
+
+`SEVERITY` lists designations uppercase (`'OUT'`, `'DOUBTFUL'`, `'QUESTIONABLE'`) but
+Sleeper sends them title-cased (`'Out'`, `'Doubtful'`, `'Questionable'`). Every real
+designation therefore missed the table, hit the `except ValueError` branch, and scored
+`len(SEVERITY) - 1` — the same score as "no designation at all". Because both sides of
+the comparison scored identically, `sev(b) < sev(a)` was never true and **every**
+injury-designation change was labelled `[better]` and sorted to the bottom of the report.
+
+Caught on Puka Nacua going Questionable → Doubtful and being printed as `[better]`. A
+downgrade reported as an upgrade, and buried under the genuine upgrades, is the one
+failure mode this scan exists to prevent — the whole point is to surface a player getting
+worse before lineups lock.
+
+Fix: upper-case the status before the lookup, and handle `None` explicitly rather than
+letting it fall through the same branch. Verified: Questionable → Doubtful now reads
+`worse`, Doubtful → Questionable reads `better`, Out → Questionable reads `better`.
+
+Scope: reporting and sort order only. `sev()` has no other caller, so no projection,
+baseline or win-probability number changes.

@@ -2,9 +2,9 @@
  "_note": "Researched return weeks for rostered players. return_week = first NFL week the player is expected to play. Maintained by the morning report run. NFL IR = minimum 4 games.",
  "A.J. Brown": {
   "return_week": 12,
-  "note": "Degenerative knee flare-up: Out Week 8 at MIA and Week 9 vs GB, no practice that week. Vrabel noncommittal on Week 10 (vs DET in Germany). Insider report: likely misses Week 10, then the Week 11 bye, with Week 12 the possible return; Bleacher Report says the Patriots are 'optimistic' about after the bye. Week 12 unconfirmed.",
-  "source": "Boston.com (11/6, 11/7), Bleacher Report, Newsweek; Mike Reiss (ESPN) via Boston.com",
-  "updated": "2026-11-10"
+  "note": "Knee flare-up on top of the ankle; has missed the last two games. Listed Questionable for Week 10 and expected to travel to Munich, but the beat reporting says he likely will not play and is expected to be held out through the Week 11 bye, returning Week 12 at LAC. The 11/10 Sleeper move from Out to Questionable is a designation change only. Unconfirmed.",
+  "source": "ESPN (Schefter, knee is the primary concern); ProFootballRumors (11/2026); Musketfire (Vrabel: likely will not make it); NFL.com 2026 Patriots schedule (Week 11 bye)",
+  "updated": "2026-11-11"
  },
  "Isiah Pacheco": {
   "return_week": 14,
@@ -55,10 +55,10 @@
   "updated": "2026-11-10"
  },
  "TreVeyon Henderson": {
-  "return_week": 10,
-  "note": "High-ankle sprain (Week 5 vs LV); ruled out again for Week 9 vs GB, listed with illness and no practice all week. No Week 10 report yet; Week 10 vs DET is the next game, unconfirmed.",
-  "source": "Boston.com Patriots-Packers injury report (11/6), The Fantasy Footballers (Week 9 DNPs)",
-  "updated": "2026-11-10"
+  "return_week": 12,
+  "note": "Neurological symptoms that required hospitalisation; has not practised at all in November and is out for Week 10 at DET (Munich). Sleeper moved him Out -> Questionable on 11/10 but the reporting says he is not playing, so the designation is not a return signal. Patriots bye is Week 11, so Week 12 at LAC is the earliest possible game. No timetable given - unconfirmed.",
+  "source": "NBC Sports Week 10 injury report (11/10); RotoBaller Corey Kiner player news (11/09); NFL.com/Patriots.com 2026 schedule (Week 11 bye)",
+  "updated": "2026-11-11"
  },
  "Deebo Samuel": {
   "return_week": 9,
@@ -67,10 +67,10 @@
   "updated": "2026-10-13"
  },
  "Jalen Hurts": {
-  "return_week": 10,
-  "note": "Superficial blood clot in calf (cleated Week 4 vs LAR). Follow-up ultrasound Wed 10/14 showed the clot moving; ruled out Week 6 vs CAR, no timetable. Tanner McKee starts. Yahoo's Week 6 tracker headline says he's going on IR (couldn't read the detail, unconfirmed); IR = Weeks 6-9 minimum, so Week 10 is the earliest if that holds.",
-  "source": "Eagles statement via ESPN/Philadelphia Inquirer (10/15); Yahoo Sports injury tracker headline (unconfirmed IR)",
-  "updated": "2026-10-17"
+  "return_week": 11,
+  "note": "Superficial blood clot in calf (cleated Week 4 vs LAR); out since Week 5, still on IR per Sleeper status (11/10). Eagles bye is Week 10 (NFL.com schedule), so Week 11 is the earliest possible game. No 2026 activation report found. Unconfirmed.",
+  "source": "Eagles statement via ESPN/Philadelphia Inquirer (10/15); Sleeper status IR (11/10); NFL.com 2026 Eagles schedule (Week 10 bye)",
+  "updated": "2026-11-10"
  },
  "David Montgomery": {
   "return_week": 10,
@@ -83,5 +83,11 @@
   "note": "Short-term IR 10/31 (knee, hurt in practice 10/29). Must miss four games: Weeks 8, 9, 11, 12 (DEN bye Week 10). Eligible Week 13 vs MIA.",
   "source": "AP via Washington Post/Fox Sports, NBC Sports (PFT), Yahoo (11/1)",
   "updated": "2026-11-01"
+ },
+ "Rhamondre Stevenson": {
+  "return_week": 12,
+  "note": "Knee tendon injury suffered in the Week 9 loss to GB; ruled out for Week 10 at DET and reported as a multi-week absence. Patriots bye is Week 11, so Week 12 at LAC is the earliest possible game. Sleeper has him Doubtful. Unconfirmed.",
+  "source": "NBC Sports Week 10 injury report (11/10); NESN (11/10); NFL.com/Patriots.com 2026 schedule (Week 11 bye)",
+  "updated": "2026-11-11"
  }
 }
