@@ -126,6 +126,7 @@ Runs the whole pipeline and writes results to `state/latest_*.txt`. To text a re
 | `state/injury_overrides.json` | researched injury return weeks, maintained by the report run |
 | `state/role_overrides.json` | evidenced role changes, maintained by the report run |
 | `state/model_changelog.md` | every model change; read before explaining an odds move |
+| `state/research_log.md` | why an injury/role override changed, with sources — the override files hold only *what* changed, and the reasoning used to exist solely in the scheduled run's chat session |
 | `recipients.txt` | phone numbers for the text report (gitignored) |
 | `update.sh` | runs the whole pipeline in order; everything downstream reads its output |
 | `autorefresh.sh` | what launchd calls — `update.sh` then `deploy_site.sh`, with an explicit `PATH` because launchd starts with a near-empty environment |
