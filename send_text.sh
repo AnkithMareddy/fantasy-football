@@ -49,4 +49,11 @@ if [ "$FAILED" -gt 0 ]; then
   echo "$FAILED of $COUNT recipient(s) failed"
   exit 1
 fi
+
+# One ledger for every successful send, whatever started it. Both the launchd job and the
+# Claude routine text through this script, and until now neither knew what the other had
+# done: on 2026-11-01 and 11-02 both sent a report for the same slate, so two texts
+# arrived for one set of games. textreport.sh reads this to stay quiet when the researched
+# report already went out.
+printf '%s\t%s\t%s\n' "$(date +%s)" "$(date '+%F %T')" "$1" >> "$DIR/state/sent_log.tsv"
 exit 0

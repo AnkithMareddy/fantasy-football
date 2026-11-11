@@ -151,17 +151,25 @@ and nothing that can stall on a prompt. See [launchd/README.md](launchd/README.m
 | Agent | Runs | Does |
 |---|---|---|
 | `com.showmeyourtds.refresh` | daily 05:00, 14:00 | `autorefresh.sh` — full pipeline, then deploy. No text. |
-| `com.showmeyourtds.text` | Sun 08:00, Sun 22:30, Mon 22:30, Thu 17:30 | `textreport.sh auto --send` |
+| `com.showmeyourtds.text` | Thu 18:30, Fri 09:30, Sun 09:30, Mon 09:30, Mon 18:30, Tue 09:30 | `textreport.sh auto --send` |
 
-`auto` picks preview vs recap by whether a kickoff is still ahead of you: Sunday
-before noon and Thursday before 8 PM are previews, everything else is a recap.
+Six times, because there are three slates a week and a report is wanted on both
+sides of each: Thursday night, Sunday, Monday night. The post-slate ones are the
+morning after on purpose — the old schedule recapped at 22:30 on Sunday and
+Monday, which is mid-game for a 20:15 kickoff, so SNF was never covered and MNF
+was recapped while it was still being played.
 
-One **Claude scheduled task** still runs on top of this and writes the better
-report when it can — it researches injuries and news, and explains what a result
-means, which `autoreport.py` cannot. It is the ceiling; the launchd pair is the
-floor. The floor exists because that task froze on a permission prompt three
-times (Oct 18, 23, 26), and a frozen run blocks every run queued behind it.
-See [docs/SCHEDULED_TASK.md](docs/SCHEDULED_TASK.md).
+A **Claude scheduled task** runs at 08:30 and 17:30 daily, an hour ahead of each
+slot, and writes the better report: it researches injuries and news and explains
+what a result means, which `autoreport.py` cannot. It is the ceiling; the launchd
+pair is the floor, which exists because that task froze on a permission prompt
+three times (Oct 18, 23, 26) and a frozen run blocks every run behind it.
+
+The floor stays quiet when the ceiling worked. `send_text.sh` records every
+successful send to `state/sent_log.tsv` and `textreport.sh` skips if anything
+went out in the last 6 hours — otherwise both paths text the same slate, which
+happened on Nov 1 and Nov 2. See [docs/SCHEDULED_TASK.md](docs/SCHEDULED_TASK.md)
+and [launchd/README.md](launchd/README.md).
 
 Neither agent runs while the Mac is asleep, and launchd does not catch up a
 missed calendar run on wake.
