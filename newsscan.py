@@ -36,8 +36,15 @@ SEVERITY = ['IR', 'PUP', 'SUS', 'NA', 'OUT', 'DOUBTFUL', 'QUESTIONABLE', None]
 
 
 def sev(status):
+    # Sleeper sends these title-cased ("Doubtful"), so compare upper-cased. Without the
+    # .upper() every real designation landed in the ValueError branch and scored the same
+    # as "no designation", which meant EVERY change was labelled an upgrade and sorted to
+    # the bottom: on 2026-11-11 a Questionable -> Doubtful read as "[better]". A downgrade
+    # being reported as good news is the one thing this scan must never do.
+    if status is None:
+        return len(SEVERITY) - 1
     try:
-        return SEVERITY.index(status)
+        return SEVERITY.index(str(status).upper())
     except ValueError:
         return len(SEVERITY) - 1
 
